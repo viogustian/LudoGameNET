@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "backend", "backend", "{51331F5B-3F8C-45CF-8D58-32F837E62136}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Backend", "Backend", "{4A8D77BE-ED32-496F-AE43-0FF2717D55AF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LudoGameNET.Api", "backend\LudoGameNET.Api\LudoGameNET.Api.csproj", "{8838E442-6B2E-437F-95A5-D01CC6EE49F3}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LudoGameNET.Api", "Backend\LudoGameNET.Api\LudoGameNET.Api.csproj", "{B598C73B-47C8-4784-8114-1406EB14450E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -16,12 +16,12 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{8838E442-6B2E-437F-95A5-D01CC6EE49F3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{8838E442-6B2E-437F-95A5-D01CC6EE49F3}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{8838E442-6B2E-437F-95A5-D01CC6EE49F3}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{8838E442-6B2E-437F-95A5-D01CC6EE49F3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B598C73B-47C8-4784-8114-1406EB14450E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B598C73B-47C8-4784-8114-1406EB14450E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B598C73B-47C8-4784-8114-1406EB14450E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B598C73B-47C8-4784-8114-1406EB14450E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{8838E442-6B2E-437F-95A5-D01CC6EE49F3} = {51331F5B-3F8C-45CF-8D58-32F837E62136}
+		{B598C73B-47C8-4784-8114-1406EB14450E} = {4A8D77BE-ED32-496F-AE43-0FF2717D55AF}
 	EndGlobalSection
 EndGlobal
