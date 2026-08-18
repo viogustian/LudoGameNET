@@ -1,0 +1,6 @@
+@LudoGameNET.Api_HostAddress = http://localhost:5286
+
+GET {{LudoGameNET.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
