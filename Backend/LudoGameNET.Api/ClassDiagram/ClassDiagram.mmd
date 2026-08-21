@@ -1,0 +1,145 @@
+classDiagram
+
+    class IBoard {
+        <<interface>>
+        +Square[,] Squares
+    }
+
+    class IPlayer {
+        <<interface>>
+        +int Id
+        +PlayerColor Color
+        +List~IPiece~ Pieces
+    }
+
+    class IPiece {
+        <<interface>>
+        +int Id
+        +PlayerColor Color
+        +PieceState State
+        +int PathIndex
+    }
+
+    class IDice {
+        <<interface>>
+        +int Value
+    }
+
+    class Board {
+        +Square[,] Squares
+        +Board(squares)
+    }
+
+    class Square {
+        +Point Position
+        +SquareType Type
+        +PlayerColor? HomeColor
+        +List~IPiece~ Pieces
+        +Square(position, type, homeColor, pieces)
+    }
+
+    class Piece {
+        +int Id
+        +PlayerColor Color
+        +PieceState State
+        +int PathIndex
+        +Piece(id, color, state, pathIndex)
+    }
+
+    class Player {
+        +int Id
+        +PlayerColor Color
+        +List~IPiece~ Pieces
+        +Player(id, color, pieces)
+    }
+
+    class Dice {
+        +int Value
+    }
+
+    class Point {
+        <<record struct>>
+        +int Row
+        +int Column
+    }
+
+    class LudoGame {
+        +List~IPlayer~ Players
+        +IBoard Board
+        +IDice Dice
+        +Dictionary Paths
+        +int CurrentPlayerIndex
+        +int ConsecutiveSixes
+        +GameState State
+        +LudoGame(playerColors, dice)
+        +StartGame()
+        +CreatePaths()
+        +GetCurrentPlayer() IPlayer
+        +RollDice() int
+        +GetValidPieces(player, diceValue) List~IPiece~
+        +GetSquare(position) Square
+        +IsValidPosition(position) bool
+        +IsSafePosition(square) bool
+        +CanEnterBoard(piece, diceValue) bool
+        +CanMove(piece, diceValue) bool
+        +HasReachedFinish(piece) bool
+        +MovePiece(player, piece, diceValue)
+        +GetNextPathIndex(piece, steps) int
+        +GetSquareAtPathIndex(color, pathIndex) Square
+        +HandleCapture(piece, square)
+        +CapturePiece(piece, square)
+        +CheckWinner(player) bool
+        +EndGame(winner)
+        +HandleTurnAfterMove(diceValue)
+        +NextTurn()
+        +CreateBoard() Board
+        +BuildPathForColor(color) List~Point~
+    }
+
+    class GameState {
+        <<enumeration>>
+        NotStarted
+        Playing
+        Finished
+    }
+
+    class PlayerColor {
+        <<enumeration>>
+        Red
+        Green
+        Yellow
+        Blue
+    }
+
+    class PieceState {
+        <<enumeration>>
+        Base
+        OnBoard
+        Finished
+    }
+
+    class SquareType {
+        <<enumeration>>
+        Yard
+        Common
+        Safe
+        HomeStretch
+        Goal
+    }
+
+    %% ===================== Relationships =====================
+    Board ..|> IBoard
+    Player ..|> IPlayer
+    Piece ..|> IPiece
+    Dice ..|> IDice
+
+
+    LudoGame o-- "2..4" IPlayer : Players
+    LudoGame *-- IBoard : Board
+    LudoGame *-- IDice : Dice
+    LudoGame --> Point : Paths
+
+    Board *-- "225" Square : Squares
+    Square --> Point : Position
+    Square o-- "0..*" IPiece : Pieces
+    Player o-- "4" IPiece : Pieces
