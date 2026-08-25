@@ -18,11 +18,10 @@ public class LudoGame
     public IDice Dice { get; set; }
     public Dictionary<PlayerColor, List<Point>> Paths { get; set; }
     public int CurrentPlayerIndex { get; set; }
-
     public int ConsecutiveSixes { get; set; }
     public GameState State { get; set; }
 
-    public LudoGame(List<PlayerColor> playerColors, IDice? dice =null)
+    public LudoGame(List<PlayerColor> playerColors, IDice? dice = null)
     {
         List<PlayerColor> colors = playerColors ?? throw new ArgumentNullException(nameof(playerColors));
 
@@ -43,7 +42,7 @@ public class LudoGame
         CreatePaths();
 
         Players = colors
-            .Select((color, index) => new Player(index, color, CreatePiecesForColor(color)))
+            .Select((color, index) => (IPlayer) new Player(index, color, CreatePiecesForColor(color)))
             .ToList();
 
         CurrentPlayerIndex = 0;
@@ -52,4 +51,17 @@ public class LudoGame
 
     }
 
+    public void StartGame()
+    {
+        State = GameState.Playing;
+    }
+
+    public static List<IPiece> CreatePiecesForColor(PlayerColor color) =>
+        Enumerable.Range(0,PiecesPerPlayer).Select(id => (IPiece) new Piece(id, color, PieceState.Base, null))
+        .ToList();   
+
+    public void CreatePaths()
+    {
+        Paths = Enum.GetValues<PlayerColor>().ToDictionary(color => color, BuildPathForColor);
+    }
 }
