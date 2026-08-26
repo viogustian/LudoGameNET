@@ -106,5 +106,16 @@ public class LudoGame
         position.Row >=0 && position.Row <= Board.Squares.GetLength(0) &&
         position.Column >=0 && position.Column <= Board.Squares.GetLength(1);
 
+    public bool IsSafePosition(Square square) => 
 
+        square.Type == SquareType.Safe ||
+        square.Type == SquareType.Yard ||
+        square.Type == SquareType.HomeStretch ||
+        square.Type == SquareType.Goal;
+
+    public bool CanEnterBoard(IPiece piece, int diceValue) =>
+        piece.State == PieceState.Base && diceValue == 6;
+    
+    public bool CanMove(IPiece piece, int diceValue) =>
+        piece.State == PieceState.OnBoard && diceValue
 }
