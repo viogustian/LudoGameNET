@@ -17,9 +17,9 @@ public class LudoGame
     public const int HomeStretchLength = 6;
     public const int TotalPathLength = CommonTrackLength - 1 + HomeStretchLength;
     public List<IPlayer> Players { get; set; }
-    public IBoard Board { get; set; }
+    public IBoard? Board { get; set; }
     public IDice Dice { get; set; }
-    public Dictionary<PlayerColor, List<Point>> Paths { get; set; }
+    public Dictionary<PlayerColor, List<Point>>? Paths { get; set; }
     public int CurrentPlayerIndex { get; set; }
     public int ConsecutiveSixes { get; set; }
     public GameState State { get; set; }
@@ -104,11 +104,11 @@ public class LudoGame
             throw new ArgumentOutOfRangeException(nameof(position), "Position is outside the board!");
         }
 
-        return Board.Squares[position.Row, position.Column];
+        return (Board ?? throw new InvalidOperationException("The board has not been initialized.")).Squares[position.Row, position.Column];
     }
 
     public bool IsValidPosition(Point position) =>
-        position.Row >=0 && position.Row < Board.Squares.GetLength(0) &&
+        Board is not null && position.Row >= 0 && position.Row < Board.Squares.GetLength(0) &&
         position.Column >=0 && position.Column < Board.Squares.GetLength(1);
 
     public bool IsSafePosition(Square square) => 
@@ -140,7 +140,8 @@ public class LudoGame
 
     public Square GetSquareAtPathIndex(PlayerColor color, int pathIndex)
     {
-        var point = Paths[color][pathIndex];
+        var paths = Paths ?? throw new InvalidOperationException("The paths have not been initialized.");
+        var point = paths[color][pathIndex];
         return GetSquare(point);
     }
 
