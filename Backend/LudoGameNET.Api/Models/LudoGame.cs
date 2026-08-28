@@ -27,7 +27,7 @@ public class LudoGame
     public static List<Point> CommonPath = new List<Point>
     {
         new(6,1), new(6,2), new(6,3), new(6,4), new(6,5),
-        new(5,6), new(4,6), new(3,6), new(2,6), new(1,5),
+        new(5,6), new(4,6), new(3,6), new(2,6), new(1,6),
         new(0,6),
         new(0,7),
         new(0,8),
