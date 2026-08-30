@@ -1,122 +1,77 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import TargetCursor from './components/TargetCursor/TargetCursor.jsx';
+import Header from './components/common/Header.jsx';
+import ErrorBanner from './components/common/ErrorBanner.jsx';
+import WinnerModal from './components/common/WinnerModal.jsx';
+import PlayerSetup from './components/setup/PlayerSetup.jsx';
+import Board from './components/board/Board.jsx';
+import TurnPanel from './components/sidebar/TurnPanel.jsx';
+import PlayersList from './components/sidebar/PlayersList.jsx';
+import { useGameState } from './hooks/useGameState.js';
+import DevTools from './components/devtools/DevTools.jsx';
+import { DEV_TOOLS_ENABLED } from './config/devtools.js';
 
-function App() {
-  const [count, setCount] = useState(0)
+export default function App() {
+  const gameStateApi = useGameState();
+  const {
+    screen, selectedColors, gameState, diceValue, diceDisplayValue, rollToken, validPieces,
+    rolling, busy, error, muted, cellGroups, validIds, canRoll, currentPlayer,
+    toggleMuted, toggleColor, startGame, rollDice, movePiece, resetGame,
+  } = gameStateApi;
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <div
+      style={{ fontFamily: "'Inter', sans-serif", backgroundColor: '#1E2438' }}
+      className="w-full min-h-screen flex flex-col items-center p-4 sm:p-6"
+    >
+      <TargetCursor spinDuration={2} hideDefaultCursor={true} parallaxOn={true} />
 
-      <div className="ticks"></div>
+      <Header screen={screen} muted={muted} onToggleMuted={toggleMuted} onResetGame={resetGame} />
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+      <ErrorBanner message={error} />
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+      {screen === 'setup' && (
+        <PlayerSetup
+          selectedColors={selectedColors}
+          onToggleColor={toggleColor}
+          onStart={startGame}
+          busy={busy}
+        />
+      )}
+
+      {screen === 'game' && gameState && (
+        <div className="w-full max-w-5xl flex flex-col lg:flex-row gap-5">
+          <div className="flex-1 flex justify-center">
+            <Board
+              cellGroups={cellGroups}
+              currentColor={currentPlayer?.color}
+              validIds={validIds}
+              onPieceClick={movePiece}
+              canClick={diceValue != null}
+            />
+          </div>
+
+          <div className="w-full lg:w-72 flex flex-col gap-4">
+            <TurnPanel
+              currentPlayer={currentPlayer}
+              diceDisplayValue={diceDisplayValue}
+              rollToken={rollToken}
+              rolling={rolling}
+              busy={busy}
+              canRoll={canRoll}
+              onRollDice={rollDice}
+              showHint={diceValue != null && validPieces.length > 0}
+            />
+            <PlayersList players={gameState.players} currentPlayerIndex={gameState.currentPlayerIndex} />
+          </div>
+        </div>
+      )}
+
+      <WinnerModal
+        winnerColor={gameState?.state === 'Finished' ? gameState.winnerColor : null}
+        onPlayAgain={resetGame}
+      />
+
+      {DEV_TOOLS_ENABLED && <DevTools uiState={gameStateApi} />}
+    </div>
+  );
 }
-
-export default App

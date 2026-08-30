@@ -7,6 +7,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Backend", "Backend", "{4A8D
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LudoGameNET.Api", "Backend\LudoGameNET.Api\LudoGameNET.Api.csproj", "{B598C73B-47C8-4784-8114-1406EB14450E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LudoGameNET.Tests", "Backend\LudoGameNET.Tests\LudoGameNET.Tests.csproj", "{6FD7EBCA-6942-5F2F-A56A-7BCF2639A342}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -16,12 +18,17 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6FD7EBCA-6942-5F2F-A56A-7BCF2639A342}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6FD7EBCA-6942-5F2F-A56A-7BCF2639A342}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6FD7EBCA-6942-5F2F-A56A-7BCF2639A342}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6FD7EBCA-6942-5F2F-A56A-7BCF2639A342}.Release|Any CPU.Build.0 = Release|Any CPU
 		{B598C73B-47C8-4784-8114-1406EB14450E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{B598C73B-47C8-4784-8114-1406EB14450E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B598C73B-47C8-4784-8114-1406EB14450E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B598C73B-47C8-4784-8114-1406EB14450E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
+		{6FD7EBCA-6942-5F2F-A56A-7BCF2639A342} = {4A8D77BE-ED32-496F-AE43-0FF2717D55AF}
 		{B598C73B-47C8-4784-8114-1406EB14450E} = {4A8D77BE-ED32-496F-AE43-0FF2717D55AF}
 	EndGlobalSection
 EndGlobal
