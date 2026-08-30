@@ -107,7 +107,7 @@ public class LudoGame
 
         Dice = dice?? new Dice();
         
-        CreateBoard();
+        Board = CreateBoard();
         CreatePaths();
 
         Players = colors
@@ -136,9 +136,25 @@ public class LudoGame
 
     public IPlayer GetCurrentPlayer() => Players[CurrentPlayerIndex];
 
+    /// <summary>Dev-tools only: when set, the next call to <see cref="RollDice"/>
+    /// returns this value instead of a random one. Cleared automatically after
+    /// being consumed unless <see cref="DiceLocked"/> is true.</summary>
+    public int? ForcedDiceValue { get; set; }
+
+    /// <summary>Dev-tools only: when true, <see cref="ForcedDiceValue"/> is kept
+    /// after being consumed, so every subsequent roll keeps returning the same
+    /// forced value until cleared.</summary>
+    public bool DiceLocked { get; set; }
+
     public int RollDice()
     {
-        var value = Random.Shared.Next(1, 7);
+        var value = ForcedDiceValue ?? Random.Shared.Next(1, 7);
+
+        if (ForcedDiceValue.HasValue && !DiceLocked)
+        {
+            ForcedDiceValue = null;
+        }
+
         Dice.Value = value;
         return value;
     }
@@ -418,5 +434,158 @@ public class LudoGame
         HandleTurnAfterMove(diceValue);
     }
 
+    // -----------------------------------------------------------------
+    // Dev-tools only helpers.
+    //
+    // These bypass every normal movement rule on purpose — they exist so the
+    // DevTools panel in the frontend can reproduce edge cases on demand
+    // (stacked pieces, near-goal approaches, forced captures, triple-six
+    // forfeits, etc.) instead of having to grind through real rolls to set
+    // up a scenario. They are only reachable through DevController, which
+    // itself refuses to run outside the Development environment.
+    // -----------------------------------------------------------------
 
+    private void DevRemoveFromCurrentSquare(IPiece piece)
+    {
+        if (piece.State == PieceState.OnBoard && piece.PathIndex is int idx)
+        {
+            var square = GetSquareAtPathIndex(piece.Color, idx);
+            square.Pieces.Remove(piece);
+        }
+    }
+
+    /// <summary>Sends every Base piece of a color onto the board at once
+    /// (their shared starting square), bypassing the "must roll a 6" rule.
+    /// Any opponent piece already on that square is captured as usual.</summary>
+    public void DevEnterAllPieces(PlayerColor color)
+    {
+        var player = Players.FirstOrDefault(p => p.Color == color)
+            ?? throw new ArgumentException($"No player with color {color} in this game.");
+
+        foreach (var piece in player.Pieces.Where(p => p.State == PieceState.Base).ToList())
+        {
+            piece.State = PieceState.OnBoard;
+            piece.PathIndex = 0;
+
+            var startSquare = GetSquareAtPathIndex(color, 0);
+            startSquare.Pieces.Add(piece);
+            HandleCapture(piece, startSquare);
+        }
+    }
+
+    /// <summary>Sends every not-yet-finished piece of a color straight to its
+    /// Goal square. Ends the game immediately if that completes the player.</summary>
+    public void DevFinishAllPieces(PlayerColor color)
+    {
+        var player = Players.FirstOrDefault(p => p.Color == color)
+            ?? throw new ArgumentException($"No player with color {color} in this game.");
+
+        foreach (var piece in player.Pieces.Where(p => p.State != PieceState.Finished))
+        {
+            DevRemoveFromCurrentSquare(piece);
+            piece.PathIndex = TotalPathLength - 1;
+            piece.State = PieceState.Finished;
+        }
+
+        if (CheckWinner(player))
+        {
+            EndGame();
+        }
+    }
+
+    /// <summary>Resets every non-Base piece of a color back to Base (yard) —
+    /// the reverse of <see cref="DevEnterAllPieces"/>, handy for re-running a
+    /// scenario from scratch without restarting the whole game.</summary>
+    public void DevResetPiecesToBase(PlayerColor color)
+    {
+        var player = Players.FirstOrDefault(p => p.Color == color)
+            ?? throw new ArgumentException($"No player with color {color} in this game.");
+
+        foreach (var piece in player.Pieces.Where(p => p.State != PieceState.Base))
+        {
+            DevRemoveFromCurrentSquare(piece);
+            piece.State = PieceState.Base;
+            piece.PathIndex = null;
+        }
+    }
+
+    /// <summary>Generic "teleport one piece anywhere" tool: forces a single
+    /// piece into an arbitrary state/path index, bypassing all movement
+    /// rules. This is the building block for setting up any edge case that
+    /// doesn't have a dedicated shortcut above (e.g. two pieces about to
+    /// collide, a piece one step from Goal, a blockade on a safe square).</summary>
+    public void DevForcePiece(PlayerColor color, int pieceId, PieceState state, int? pathIndex)
+    {
+        var player = Players.FirstOrDefault(p => p.Color == color)
+            ?? throw new ArgumentException($"No player with color {color} in this game.");
+
+        var piece = player.Pieces.FirstOrDefault(p => p.Id == pieceId)
+            ?? throw new ArgumentException($"No piece with id {pieceId} for {color}.");
+
+        DevRemoveFromCurrentSquare(piece);
+
+        switch (state)
+        {
+            case PieceState.Base:
+                piece.State = PieceState.Base;
+                piece.PathIndex = null;
+                break;
+
+            case PieceState.OnBoard:
+                var idx = pathIndex ?? 0;
+                if (idx < 0 || idx > TotalPathLength - 2)
+                {
+                    throw new ArgumentException(
+                        $"pathIndex must be between 0 and {TotalPathLength - 2} for an on-board piece.");
+                }
+
+                piece.State = PieceState.OnBoard;
+                piece.PathIndex = idx;
+
+                var square = GetSquareAtPathIndex(color, idx);
+                square.Pieces.Add(piece);
+                HandleCapture(piece, square);
+                break;
+
+            case PieceState.Finished:
+                piece.State = PieceState.Finished;
+                piece.PathIndex = TotalPathLength - 1;
+                break;
+
+            default:
+                throw new ArgumentException($"Unknown piece state {state}.");
+        }
+
+        if (CheckWinner(player))
+        {
+            EndGame();
+        }
+    }
+
+    /// <summary>Jumps straight to a given player's turn, resetting the
+    /// consecutive-sixes counter (handy for setting up "it's player X's
+    /// turn" scenarios without playing through everyone else's turns).</summary>
+    public void DevSetCurrentPlayer(int playerIndex)
+    {
+        if (playerIndex < 0 || playerIndex >= Players.Count)
+        {
+            throw new ArgumentException($"playerIndex must be between 0 and {Players.Count - 1}.");
+        }
+
+        CurrentPlayerIndex = playerIndex;
+        ConsecutiveSixes = 0;
+    }
+
+    /// <summary>Directly sets the consecutive-sixes counter, to test the
+    /// "three sixes in a row forfeits the turn" edge case without needing to
+    /// actually roll three real sixes in a row.</summary>
+    public void DevSetConsecutiveSixes(int count)
+    {
+        if (count < 0)
+        {
+            throw new ArgumentException("count cannot be negative.");
+        }
+
+        ConsecutiveSixes = count;
+    }
 }

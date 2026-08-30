@@ -1,0 +1,209 @@
+using LudoGameNET.Api.DTOs;
+using LudoGameNET.Api.Enums;
+using LudoGameNET.Api.Game;
+using LudoGameNET.Api.Interfaces;
+using LudoGameNET.Api.Mapping;
+using LudoGameNET.Api.Models;
+using Microsoft.AspNetCore.Mvc;
+
+namespace LudoGameNET.Api.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+public class GameController : ControllerBase
+{
+    private readonly IGameManager _gameManager;
+
+    public GameController(IGameManager gameManager)
+    {
+        _gameManager = gameManager;
+    }
+
+    /// <summary>Starts a new game with 2 to 4 players. Replaces any existing game.</summary>
+    [HttpPost]
+    public ActionResult<GameStateDto> StartGame([FromBody] StartGameRequest request)
+    {
+        try
+        {
+            var game = _gameManager.CreateGame(request.Colors);
+            return Ok(GameStateMapper.ToGameStateDto(game));
+        }
+        catch (Exception ex) when (ex is ArgumentException or ArgumentNullException)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>Gets the current game's full state.</summary>
+    [HttpGet]
+    public ActionResult<GameStateDto> GetState()
+    {
+        var game = _gameManager.CurrentGame;
+        if (game is null)
+        {
+            return NotFound(new { error = "No game has been started yet. POST /api/game to start one." });
+        }
+
+        return Ok(GameStateMapper.ToGameStateDto(game));
+    }
+
+    /// <summary>Gets the player whose turn it currently is.</summary>
+    [HttpGet("current-player")]
+    public ActionResult<PlayerDto> GetCurrentPlayer()
+    {
+        var game = _gameManager.CurrentGame;
+        if (game is null)
+        {
+            return NotFound(new { error = "No game has been started yet." });
+        }
+
+        return Ok(GameStateMapper.ToPlayerDto(game.GetCurrentPlayer()));
+    }
+
+    /// <summary>Rolls the dice for the current player and returns which of their pieces can legally move.</summary>
+    [HttpPost("roll")]
+    public ActionResult<RollDiceResponseDto> RollDice()
+    {
+        var game = _gameManager.CurrentGame;
+        if (game is null)
+        {
+            return NotFound(new { error = "No game has been started yet." });
+        }
+
+        if (game.State != GameState.Playing)
+        {
+            return BadRequest(new { error = "The game is not currently in progress." });
+        }
+
+        var diceValue = game.RollDice();
+        var currentPlayer = game.GetCurrentPlayer();
+        var validPieces = game.GetValidPieces(currentPlayer, diceValue);
+
+        if (validPieces.Count == 0)
+        {
+            // No legal moves available with this roll: turn passes automatically
+            // (unless it was a 6, in which case the player keeps the turn but
+            // simply has nothing to move).
+            game.HandleTurnAfterMove(diceValue);
+        }
+
+        return Ok(new RollDiceResponseDto
+        {
+            DiceValue = diceValue,
+            CurrentPlayerIndex = game.CurrentPlayerIndex,
+            ValidPieces = validPieces.Select(PieceDto.From).ToList(),
+        });
+    }
+
+    /// <summary>Gets the pieces belonging to a player that may legally move with the given dice value.</summary>
+    [HttpGet("valid-pieces")]
+    public ActionResult<List<PieceDto>> GetValidPieces([FromQuery] int playerId, [FromQuery] int diceValue)
+    {
+        var game = _gameManager.CurrentGame;
+        if (game is null)
+        {
+            return NotFound(new { error = "No game has been started yet." });
+        }
+
+        var player = game.Players.FirstOrDefault(p => p.Id == playerId);
+        if (player is null)
+        {
+            return BadRequest(new { error = $"No player with id {playerId}." });
+        }
+
+        var validPieces = game.GetValidPieces(player, diceValue);
+        return Ok(validPieces.Select(PieceDto.From).ToList());
+    }
+
+    /// <summary>Moves the current player's piece by the given dice value, applying capture/finish/turn rules.</summary>
+    [HttpPost("move")]
+    public ActionResult<GameStateDto> MovePiece([FromBody] MovePieceRequest request)
+    {
+        var game = _gameManager.CurrentGame;
+        if (game is null)
+        {
+            return NotFound(new { error = "No game has been started yet." });
+        }
+
+        var currentPlayer = game.GetCurrentPlayer();
+        var piece = currentPlayer.Pieces.FirstOrDefault(p => p.Id == request.PieceId);
+        if (piece is null)
+        {
+            return BadRequest(new { error = $"Current player has no piece with id {request.PieceId}." });
+        }
+
+        try
+        {
+            game.MovePiece(currentPlayer, piece, request.DiceValue);
+            return Ok(GameStateMapper.ToGameStateDto(game));
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or ArgumentException)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>Gets the full board, including which pieces occupy which squares.</summary>
+    [HttpGet("board")]
+    public ActionResult<List<SquareDto>> GetBoard()
+    {
+        var game = _gameManager.CurrentGame;
+        if (game is null)
+        {
+            return NotFound(new { error = "No game has been started yet." });
+        }
+
+        var squares = new List<SquareDto>();
+        var boardSquares = game.Board?.Squares;
+        if (boardSquares is null)
+        {
+            return BadRequest(new { error = "Board is not initialized." });
+        }
+
+        for (var row = 0; row < boardSquares.GetLength(0); row++)
+        {
+            for (var col = 0; col < boardSquares.GetLength(1); col++)
+            {
+                var square = boardSquares[row, col];
+                squares.Add(new SquareDto
+                {
+                    Row = square.Position.Row,
+                    Column = square.Position.Column,
+                    Type = square.Type,
+                    HomeColor = square.HomeColor,
+                    Pieces = square.Pieces.Select(PieceDto.From).ToList(),
+                });
+            }
+        }
+
+        return Ok(squares);
+    }
+
+    /// <summary>Gets a single square by row/column.</summary>
+    [HttpGet("square")]
+    public ActionResult<SquareDto> GetSquare([FromQuery] int row, [FromQuery] int column)
+    {
+        var game = _gameManager.CurrentGame;
+        if (game is null)
+        {
+            return NotFound(new { error = "No game has been started yet." });
+        }
+
+        var position = new Point(row, column);
+        if (!game.IsValidPosition(position))
+        {
+            return BadRequest(new { error = "Position is outside the board." });
+        }
+
+        var square = game.GetSquare(position);
+        return Ok(new SquareDto
+        {
+            Row = square.Position.Row,
+            Column = square.Position.Column,
+            Type = square.Type,
+            HomeColor = square.HomeColor,
+            Pieces = square.Pieces.Select(PieceDto.From).ToList(),
+        });
+    }
+
+}
