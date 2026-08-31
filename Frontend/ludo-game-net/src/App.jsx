@@ -20,7 +20,13 @@ export default function App() {
 
   return (
     <div
-      style={{ fontFamily: "'Inter', sans-serif", backgroundColor: '#1E2438' }}
+      style={{
+        fontFamily: "'Inter', sans-serif",
+        backgroundImage:
+          'linear-gradient(rgba(10, 22, 12, 0.55), rgba(10, 22, 12, 0.55)), url(/textures/grass.jpg)',
+        backgroundSize: '260px 260px',
+        backgroundRepeat: 'repeat',
+      }}
       className="w-full min-h-screen flex flex-col items-center p-4 sm:p-6"
     >
       <TargetCursor spinDuration={2} hideDefaultCursor={true} parallaxOn={true} />

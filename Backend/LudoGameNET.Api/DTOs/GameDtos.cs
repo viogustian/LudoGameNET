@@ -63,19 +63,9 @@ public class RollDiceResponseDto
     public List<PieceDto> ValidPieces { get; set; } = new();
 }
 
-// ---------------------------------------------------------------------
-// Dev-tools only DTOs — used by DevController, which is gated to the
-// Development environment. Not part of the "real" gameplay contract.
-// ---------------------------------------------------------------------
-
-/// <summary>Forces (or clears) the value the next dice roll will return.
-/// Set <see cref="Value"/> to null to go back to normal random rolls.</summary>
 public class DevSetDiceRequest
 {
     public int? Value { get; set; }
-
-    /// <summary>If true, keep returning <see cref="Value"/> on every future
-    /// roll instead of clearing it after the first use.</summary>
     public bool Lock { get; set; }
 }
 
@@ -86,23 +76,16 @@ public class DevDiceStatusDto
     public int? CurrentDiceValue { get; set; }
 }
 
-/// <summary>Used for the "enter all", "finish all" and "reset to base"
-/// dev shortcuts, which act on every piece of a single color.</summary>
 public class DevColorRequest
 {
     public PlayerColor Color { get; set; }
 }
 
-/// <summary>Generic "teleport one piece anywhere" request — the building
-/// block for constructing arbitrary edge-case board states.</summary>
 public class DevForcePieceRequest
 {
     public PlayerColor Color { get; set; }
     public int PieceId { get; set; }
     public PieceState State { get; set; }
-
-    /// <summary>Required (0..TotalPathLength-2) when <see cref="State"/> is
-    /// OnBoard; ignored otherwise.</summary>
     public int? PathIndex { get; set; }
 }
 

@@ -72,7 +72,7 @@ public class LudoGame
                 [PlayerColor.Blue] = new List<Point> { new(13,7), new(12,7), new(11,7), new(10,7), new(9,7), new(8,7) },
         };
 
-    private static readonly Dictionary<PlayerColor, (int R0, int R1, int C0, int C1)> YardRegions =
+    private static readonly Dictionary<PlayerColor, (int RowMin, int RowMax, int ColumnMin, int ColumnMax)> YardRegions =
         new Dictionary<PlayerColor, (int, int, int, int)>
         {
             [PlayerColor.Red] = (0, 5, 0, 5),
@@ -135,15 +135,7 @@ public class LudoGame
     }
 
     public IPlayer GetCurrentPlayer() => Players[CurrentPlayerIndex];
-
-    /// <summary>Dev-tools only: when set, the next call to <see cref="RollDice"/>
-    /// returns this value instead of a random one. Cleared automatically after
-    /// being consumed unless <see cref="DiceLocked"/> is true.</summary>
     public int? ForcedDiceValue { get; set; }
-
-    /// <summary>Dev-tools only: when true, <see cref="ForcedDiceValue"/> is kept
-    /// after being consumed, so every subsequent roll keeps returning the same
-    /// forced value until cleared.</summary>
     public bool DiceLocked { get; set; }
 
     public int RollDice()
@@ -317,7 +309,7 @@ public class LudoGame
             {
                 if (i == points.Count - 1)
                 {
-                    goalLookup[points[i]] = color; // last square of the stretch = that color's own Goal
+                    goalLookup[points[i]] = color;
                 }
                 else
                 {
@@ -361,8 +353,8 @@ public class LudoGame
         }
 
         var yardColor = YardRegions
-            .Where(kv => position.Row >= kv.Value.R0 && position.Row <= kv.Value.R1
-                      && position.Column >= kv.Value.C0 && position.Column <= kv.Value.C1)
+            .Where(kv => position.Row >= kv.Value.RowMin && position.Row <= kv.Value.RowMax
+                      && position.Column >= kv.Value.ColumnMin && position.Column <= kv.Value.ColumnMax)
             .Select(kv => (PlayerColor?)kv.Key)
             .FirstOrDefault();
 
@@ -434,17 +426,6 @@ public class LudoGame
         HandleTurnAfterMove(diceValue);
     }
 
-    // -----------------------------------------------------------------
-    // Dev-tools only helpers.
-    //
-    // These bypass every normal movement rule on purpose — they exist so the
-    // DevTools panel in the frontend can reproduce edge cases on demand
-    // (stacked pieces, near-goal approaches, forced captures, triple-six
-    // forfeits, etc.) instead of having to grind through real rolls to set
-    // up a scenario. They are only reachable through DevController, which
-    // itself refuses to run outside the Development environment.
-    // -----------------------------------------------------------------
-
     private void DevRemoveFromCurrentSquare(IPiece piece)
     {
         if (piece.State == PieceState.OnBoard && piece.PathIndex is int idx)
@@ -454,9 +435,6 @@ public class LudoGame
         }
     }
 
-    /// <summary>Sends every Base piece of a color onto the board at once
-    /// (their shared starting square), bypassing the "must roll a 6" rule.
-    /// Any opponent piece already on that square is captured as usual.</summary>
     public void DevEnterAllPieces(PlayerColor color)
     {
         var player = Players.FirstOrDefault(p => p.Color == color)
@@ -473,8 +451,6 @@ public class LudoGame
         }
     }
 
-    /// <summary>Sends every not-yet-finished piece of a color straight to its
-    /// Goal square. Ends the game immediately if that completes the player.</summary>
     public void DevFinishAllPieces(PlayerColor color)
     {
         var player = Players.FirstOrDefault(p => p.Color == color)
@@ -492,10 +468,6 @@ public class LudoGame
             EndGame();
         }
     }
-
-    /// <summary>Resets every non-Base piece of a color back to Base (yard) —
-    /// the reverse of <see cref="DevEnterAllPieces"/>, handy for re-running a
-    /// scenario from scratch without restarting the whole game.</summary>
     public void DevResetPiecesToBase(PlayerColor color)
     {
         var player = Players.FirstOrDefault(p => p.Color == color)
@@ -508,12 +480,6 @@ public class LudoGame
             piece.PathIndex = null;
         }
     }
-
-    /// <summary>Generic "teleport one piece anywhere" tool: forces a single
-    /// piece into an arbitrary state/path index, bypassing all movement
-    /// rules. This is the building block for setting up any edge case that
-    /// doesn't have a dedicated shortcut above (e.g. two pieces about to
-    /// collide, a piece one step from Goal, a blockade on a safe square).</summary>
     public void DevForcePiece(PlayerColor color, int pieceId, PieceState state, int? pathIndex)
     {
         var player = Players.FirstOrDefault(p => p.Color == color)
@@ -562,9 +528,6 @@ public class LudoGame
         }
     }
 
-    /// <summary>Jumps straight to a given player's turn, resetting the
-    /// consecutive-sixes counter (handy for setting up "it's player X's
-    /// turn" scenarios without playing through everyone else's turns).</summary>
     public void DevSetCurrentPlayer(int playerIndex)
     {
         if (playerIndex < 0 || playerIndex >= Players.Count)
@@ -575,10 +538,6 @@ public class LudoGame
         CurrentPlayerIndex = playerIndex;
         ConsecutiveSixes = 0;
     }
-
-    /// <summary>Directly sets the consecutive-sixes counter, to test the
-    /// "three sixes in a row forfeits the turn" edge case without needing to
-    /// actually roll three real sixes in a row.</summary>
     public void DevSetConsecutiveSixes(int count)
     {
         if (count < 0)

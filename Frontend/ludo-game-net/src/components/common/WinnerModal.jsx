@@ -1,11 +1,11 @@
 import { Crown } from 'lucide-react';
-import { COLOR_LABEL, PALETTE } from '../../constants/colors.js';
+import { COLOR_LABEL, PALETTE, WOOD_PANEL } from '../../constants/colors.js';
 
 export default function WinnerModal({ winnerColor, onPlayAgain }) {
   if (!winnerColor) return null;
   return (
     <div className="fixed inset-0 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(15,18,30,0.75)', zIndex: 50 }}>
-      <div className="rounded-2xl p-8 text-center max-w-xs w-full" style={{ backgroundColor: '#2C334E' }}>
+      <div className="rounded-2xl p-8 text-center max-w-xs w-full" style={{ ...WOOD_PANEL }}>
         <Crown size={40} color={PALETTE[winnerColor].ring} className="mx-auto mb-3" />
         <h3 style={{ fontFamily: "'Baloo 2', sans-serif", color: '#F3EBDA' }} className="text-xl font-bold mb-1">
           {COLOR_LABEL[winnerColor]} Menang!

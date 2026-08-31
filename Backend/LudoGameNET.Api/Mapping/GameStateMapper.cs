@@ -4,13 +4,6 @@ using LudoGameNET.Api.Interfaces;
 using LudoGameNET.Api.Models;
 
 namespace LudoGameNET.Api.Mapping;
-
-/// <summary>
-/// Shared DTO mapping used by both the regular gameplay endpoints
-/// (<see cref="Controllers.GameController"/>) and the dev-tools endpoints
-/// (<see cref="Controllers.DevController"/>), so both always return the
-/// exact same JSON shape for a <see cref="LudoGame"/>.
-/// </summary>
 public static class GameStateMapper
 {
     public static GameStateDto ToGameStateDto(LudoGame game)

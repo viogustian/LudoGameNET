@@ -27,7 +27,6 @@ export default function Dice3D({ value, rollToken, size = 58, clickable = false,
   const [rolling, setRolling] = useState(false);
 
   useEffect(() => {
-    // Mount pertama (belum pernah roll) — jangan animasikan apa-apa.
     if (firstRun.current) {
       firstRun.current = false;
       return;
@@ -35,7 +34,7 @@ export default function Dice3D({ value, rollToken, size = 58, clickable = false,
     if (value == null || !diceRef.current) return;
 
     const base = BASE_ROTATION[value];
-    const spinsX = 2 + Math.floor(Math.random() * 3); // 2–4 putaran penuh ekstra
+    const spinsX = 2 + Math.floor(Math.random() * 3);
     const spinsY = 2 + Math.floor(Math.random() * 3);
     const deltaX = shortestPositiveDelta(base.x, rotationRef.current.x);
     const deltaY = shortestPositiveDelta(base.y, rotationRef.current.y);
@@ -48,7 +47,7 @@ export default function Dice3D({ value, rollToken, size = 58, clickable = false,
 
     setRolling(true);
     [bounceRef, tiltRef, shadowRef].forEach((r) => r.current?.classList.remove('dice3d-rolling'));
-    void bounceRef.current?.offsetWidth; // restart animasi CSS (bounce/tilt/shadow)
+    void bounceRef.current?.offsetWidth;
     [bounceRef, tiltRef, shadowRef].forEach((r) => r.current?.classList.add('dice3d-rolling'));
 
     const node = diceRef.current;
@@ -58,7 +57,6 @@ export default function Dice3D({ value, rollToken, size = 58, clickable = false,
     };
     node.addEventListener('transitionend', handleEnd);
     return () => node.removeEventListener('transitionend', handleEnd);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rollToken]);
 
   return (
