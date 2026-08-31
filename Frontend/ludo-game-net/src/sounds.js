@@ -16,6 +16,10 @@ export const SOUND_FILES = {
   win: '/sfx/victory.mp3',         // dimainkan saat ada pemenang
 };
 
+// Musik latar (background music). Taruh/ganti file di `public/sfx/bgm.mp3`
+// — tidak perlu ubah kode apa pun, tinggal timpa filenya.
+export const BGM_FILE = '/sfx/bgm.mp3';
+
 const cache = {};
 
 function getAudio(name) {
@@ -29,21 +33,52 @@ function getAudio(name) {
 
 let muted = false;
 
+let bgmAudio = null;
+let bgmVolume = 0.35;
+
+function getBgmAudio() {
+  if (!bgmAudio) {
+    bgmAudio = new Audio(BGM_FILE);
+    bgmAudio.loop = true;
+    bgmAudio.preload = 'auto';
+  }
+  return bgmAudio;
+}
+
+export function playBgm({ volume = bgmVolume } = {}) {
+  bgmVolume = volume;
+  try {
+    const audio = getBgmAudio();
+    audio.volume = muted ? 0 : bgmVolume;
+    if (audio.paused) {
+      audio.play().catch(() => {
+
+      });
+    }
+  } catch (e) {
+  }
+}
+
+export function stopBgm() {
+  if (!bgmAudio) return;
+  bgmAudio.pause();
+  bgmAudio.currentTime = 0;
+}
+
+export function pauseBgm() {
+  if (!bgmAudio) return;
+  bgmAudio.pause();
+}
+
 export function setMuted(value) {
   muted = value;
+  if (bgmAudio) bgmAudio.volume = muted ? 0 : bgmVolume;
 }
 
 export function isMuted() {
   return muted;
 }
 
-/**
- * Memainkan efek suara berdasarkan nama key di SOUND_FILES.
- * Meng-clone elemen <audio> supaya suara yang tumpang tindih (mis. dua
- * capture beruntun) tetap bisa terdengar semuanya, bukan saling memotong.
- * Kalau file belum ada / gagal dimuat, gagal secara diam-diam (tidak
- * melempar error ke UI) supaya game tetap bisa dimainkan tanpa suara.
- */
 export function playSound(name, { volume = 1 } = {}) {
   if (muted) return;
   const source = SOUND_FILES[name];
@@ -54,6 +89,5 @@ export function playSound(name, { volume = 1 } = {}) {
     node.volume = volume;
     node.play().catch(() => {});
   } catch (e) {
-    // Autoplay diblokir atau file tidak ada — abaikan saja.
   }
 }

@@ -4,7 +4,7 @@ import { YARD_HOLDING_POINTS } from '../constants/board.js';
 import { key as cellKey } from '../lib/boardGeometry.js';
 import { piecePosition, isPieceOnBoard, pieceKey, computeWalkSteps, sleep } from '../lib/gameLogic.js';
 import { gameApi } from '../api/gameApi.js';
-import { playSound, setMuted as setSoundMuted } from '../sounds.js';
+import { playSound, setMuted as setSoundMuted, playBgm, stopBgm } from '../sounds.js';
 
 export function useGameState() {
   const [screen, setScreen] = useState('setup');
@@ -60,6 +60,7 @@ export function useGameState() {
       syncRenderPositions(data);
       setScreen('game');
       playSound('start');
+      playBgm();
     } catch (e) {
       setError(e.message);
     } finally {
@@ -165,10 +166,6 @@ export function useGameState() {
     }
   }, [gameState, diceValue, busy, syncRenderPositions]);
 
-  // Used by DevTools: after a dev-only mutation (force dice, teleport a
-  // piece, send everything to Goal, etc.) the server state can jump in ways
-  // the normal move/roll flow never produces, so we just resync everything
-  // in one go instead of trying to animate it.
   const applyServerState = useCallback((data) => {
     setGameState(data);
     syncRenderPositions(data);
@@ -186,6 +183,7 @@ export function useGameState() {
     setValidPieces([]);
     setError('');
     setRenderPositions({});
+    stopBgm();
   }, []);
 
   const cellGroups = useMemo(() => {

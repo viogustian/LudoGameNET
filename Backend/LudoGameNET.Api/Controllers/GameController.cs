@@ -19,7 +19,6 @@ public class GameController : ControllerBase
         _gameManager = gameManager;
     }
 
-    /// <summary>Starts a new game with 2 to 4 players. Replaces any existing game.</summary>
     [HttpPost]
     public ActionResult<GameStateDto> StartGame([FromBody] StartGameRequest request)
     {
@@ -34,7 +33,6 @@ public class GameController : ControllerBase
         }
     }
 
-    /// <summary>Gets the current game's full state.</summary>
     [HttpGet]
     public ActionResult<GameStateDto> GetState()
     {
@@ -47,7 +45,6 @@ public class GameController : ControllerBase
         return Ok(GameStateMapper.ToGameStateDto(game));
     }
 
-    /// <summary>Gets the player whose turn it currently is.</summary>
     [HttpGet("current-player")]
     public ActionResult<PlayerDto> GetCurrentPlayer()
     {
@@ -60,7 +57,6 @@ public class GameController : ControllerBase
         return Ok(GameStateMapper.ToPlayerDto(game.GetCurrentPlayer()));
     }
 
-    /// <summary>Rolls the dice for the current player and returns which of their pieces can legally move.</summary>
     [HttpPost("roll")]
     public ActionResult<RollDiceResponseDto> RollDice()
     {
@@ -81,9 +77,6 @@ public class GameController : ControllerBase
 
         if (validPieces.Count == 0)
         {
-            // No legal moves available with this roll: turn passes automatically
-            // (unless it was a 6, in which case the player keeps the turn but
-            // simply has nothing to move).
             game.HandleTurnAfterMove(diceValue);
         }
 
@@ -95,7 +88,6 @@ public class GameController : ControllerBase
         });
     }
 
-    /// <summary>Gets the pieces belonging to a player that may legally move with the given dice value.</summary>
     [HttpGet("valid-pieces")]
     public ActionResult<List<PieceDto>> GetValidPieces([FromQuery] int playerId, [FromQuery] int diceValue)
     {
@@ -115,7 +107,6 @@ public class GameController : ControllerBase
         return Ok(validPieces.Select(PieceDto.From).ToList());
     }
 
-    /// <summary>Moves the current player's piece by the given dice value, applying capture/finish/turn rules.</summary>
     [HttpPost("move")]
     public ActionResult<GameStateDto> MovePiece([FromBody] MovePieceRequest request)
     {
@@ -143,7 +134,6 @@ public class GameController : ControllerBase
         }
     }
 
-    /// <summary>Gets the full board, including which pieces occupy which squares.</summary>
     [HttpGet("board")]
     public ActionResult<List<SquareDto>> GetBoard()
     {
@@ -179,7 +169,6 @@ public class GameController : ControllerBase
         return Ok(squares);
     }
 
-    /// <summary>Gets a single square by row/column.</summary>
     [HttpGet("square")]
     public ActionResult<SquareDto> GetSquare([FromQuery] int row, [FromQuery] int column)
     {

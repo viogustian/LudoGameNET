@@ -20,7 +20,7 @@ public class LudoGameTurnTests
     public void NextTurn_WrapsAroundToFirstPlayer()
     {
         var game = new LudoGame(new List<PlayerColor> { PlayerColor.Red, PlayerColor.Green, PlayerColor.Blue });
-        game.CurrentPlayerIndex = 2; // last player
+        game.CurrentPlayerIndex = 2; 
 
         game.NextTurn();
 
@@ -52,7 +52,6 @@ public class LudoGameTurnTests
         Assert.Equal(0, game.CurrentPlayerIndex);
         Assert.Equal(2, game.ConsecutiveSixes);
 
-        // Third consecutive six forfeits the turn (a Ludo house rule against endless sixes).
         game.HandleTurnAfterMove(6);
         Assert.Equal(1, game.CurrentPlayerIndex);
         Assert.Equal(0, game.ConsecutiveSixes);
@@ -63,10 +62,10 @@ public class LudoGameTurnTests
     {
         var game = new LudoGame(new List<PlayerColor> { PlayerColor.Red, PlayerColor.Blue });
 
-        game.HandleTurnAfterMove(3); // resets/passes turn
-        game.HandleTurnAfterMove(6); // first six of a new streak, for Blue now
+        game.HandleTurnAfterMove(3);
+        game.HandleTurnAfterMove(6);
 
-        Assert.Equal(1, game.CurrentPlayerIndex); // Blue still has the turn
+        Assert.Equal(1, game.CurrentPlayerIndex);
         Assert.Equal(1, game.ConsecutiveSixes);
     }
 }

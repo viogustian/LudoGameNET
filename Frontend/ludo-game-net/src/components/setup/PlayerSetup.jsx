@@ -1,9 +1,9 @@
 import { Loader2 } from 'lucide-react';
-import { COLORS, COLOR_LABEL, PALETTE } from '../../constants/colors.js';
+import { COLORS, COLOR_LABEL, PALETTE, WOOD_PANEL, WOOD_PANEL_INACTIVE } from '../../constants/colors.js';
 
 export default function PlayerSetup({ selectedColors, onToggleColor, onStart, busy }) {
   return (
-    <div className="w-full max-w-md rounded-2xl p-6 sm:p-8 shadow-xl" style={{ backgroundColor: '#2C334E' }}>
+    <div className="w-full max-w-md rounded-2xl p-6 sm:p-8 shadow-xl" style={{ ...WOOD_PANEL }}>
       <h2
         style={{ fontFamily: "'Baloo 2', sans-serif", color: '#F3EBDA' }}
         className="text-xl font-bold mb-4"
@@ -20,8 +20,9 @@ export default function PlayerSetup({ selectedColors, onToggleColor, onStart, bu
               onClick={() => onToggleColor(c)}
               className="cursor-target flex items-center gap-2.5 rounded-xl px-4 py-3 font-semibold text-sm transition"
               style={{
-                backgroundColor: active ? PALETTE[c].main : '#232A44',
-                color: active ? '#FFF8EC' : '#8890B5',
+                backgroundColor: active ? PALETTE[c].main : undefined,
+                ...(active ? {} : WOOD_PANEL_INACTIVE),
+                color: active ? '#FFF8EC' : '#C9B79C',
                 boxShadow: active ? `0 0 0 2px ${PALETTE[c].ring}` : 'none',
               }}
             >

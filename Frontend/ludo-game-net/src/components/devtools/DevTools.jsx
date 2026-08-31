@@ -2,13 +2,6 @@ import { useState } from 'react';
 import { Bug, X, RefreshCw, Copy, Check, Trash2, Dices, Flag, SkipForward, Wand2, RotateCcw } from 'lucide-react';
 import { gameApi, API_BASE } from '../../api/gameApi.js';
 
-/**
- * Floating debug panel, pinned to the bottom-right corner.
- *
- * Whether this renders at all is controlled by `DEV_TOOLS_ENABLED` in
- * `src/config/devtools.js` — App.jsx only mounts <DevTools /> when that
- * flag is true, so turning the tool off is a one-line change there.
- */
 const PIECE_STATES = ['Base', 'OnBoard', 'Finished'];
 
 export default function DevTools({ uiState }) {
@@ -46,7 +39,7 @@ export default function DevTools({ uiState }) {
 
   const gameColors = gameState?.players?.map((p) => p.color) || COLORS || [];
   const effectiveActionColor = actionColor || gameColors[0] || '';
-  const maxPathIndex = 50; // TotalPathLength - 2 (51 common steps + 6 home stretch - 2)
+  const maxPathIndex = 50;
 
   const pushLog = (label, payload) => {
     setLogs((prev) => [
@@ -55,8 +48,6 @@ export default function DevTools({ uiState }) {
     ].slice(0, 20));
   };
 
-  // Runs a dev-tools API call, logs it, and — if the response looks like a
-  // full GameStateDto (has `players`) — resyncs the whole UI from it.
   const runDevAction = async (label, fn) => {
     setActionBusy(true);
     setActionError('');
@@ -105,7 +96,6 @@ export default function DevTools({ uiState }) {
   };
 
   const handleLogToConsole = () => {
-    // eslint-disable-next-line no-console
     console.log('[DevTools] client state snapshot', snapshot);
     pushLog('Logged snapshot to console', null);
   };
@@ -168,7 +158,6 @@ export default function DevTools({ uiState }) {
 
             {gameState && (
               <>
-                {/* Dadu manual */}
                 <section className="flex flex-col gap-1.5 border-b border-slate-800 pb-3">
                   <div className="flex items-center gap-1 text-amber-300"><Dices size={12} /> Dadu manual</div>
                   <div className="flex items-center gap-1.5">
@@ -216,7 +205,6 @@ export default function DevTools({ uiState }) {
                   )}
                 </section>
 
-                {/* Aksi per warna */}
                 <section className="flex flex-col gap-1.5 border-b border-slate-800 pb-3">
                   <div className="text-amber-300">Aksi per warna</div>
                   <select
@@ -251,7 +239,6 @@ export default function DevTools({ uiState }) {
                   </div>
                 </section>
 
-                {/* Teleport satu piece — untuk edge case bebas */}
                 <section className="flex flex-col gap-1.5 border-b border-slate-800 pb-3">
                   <div className="text-amber-300">Teleport 1 piece (edge case bebas)</div>
                   <div className="flex flex-wrap items-center gap-1.5">
@@ -290,7 +277,6 @@ export default function DevTools({ uiState }) {
                   </button>
                 </section>
 
-                {/* Giliran & consecutive sixes */}
                 <section className="flex flex-col gap-1.5">
                   <div className="flex items-center gap-1 text-amber-300"><SkipForward size={12} /> Giliran &amp; sixes</div>
                   <div className="flex flex-wrap items-center gap-1.5">

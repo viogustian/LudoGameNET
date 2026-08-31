@@ -6,16 +6,6 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace LudoGameNET.Api.Controllers;
 
-/// <summary>
-/// Debug-only endpoints backing the frontend's DevTools panel: forcing dice
-/// rolls, teleporting pieces, sending everything to Goal, jumping turns, etc.
-/// Every gameplay rule is bypassed on purpose — this exists purely to make
-/// edge cases reproducible for manual testing.
-///
-/// Every action here 404s unless the API is running in the Development
-/// environment (the default when you just `dotnet run` locally), so this
-/// surface can never be reached from a real deployment.
-/// </summary>
 [ApiController]
 [Route("api/game/dev")]
 public class DevController : ControllerBase
@@ -51,8 +41,6 @@ public class DevController : ControllerBase
         return true;
     }
 
-    /// <summary>Forces the next dice roll(s) to return a specific value. Pass
-    /// value: null to clear it and go back to normal random rolls.</summary>
     [HttpPost("dice")]
     public ActionResult<DevDiceStatusDto> SetDice([FromBody] DevSetDiceRequest request)
     {
@@ -74,7 +62,6 @@ public class DevController : ControllerBase
         });
     }
 
-    /// <summary>Clears any forced dice value, going back to normal random rolls.</summary>
     [HttpPost("dice/clear")]
     public ActionResult<DevDiceStatusDto> ClearDice()
     {
@@ -91,8 +78,6 @@ public class DevController : ControllerBase
         });
     }
 
-    /// <summary>Reads the current forced-dice status (used by the frontend to
-    /// show what the next roll will produce).</summary>
     [HttpGet("dice")]
     public ActionResult<DevDiceStatusDto> GetDiceStatus()
     {
@@ -106,7 +91,6 @@ public class DevController : ControllerBase
         });
     }
 
-    /// <summary>Sends every Base piece of a color onto the board at once, bypassing the "must roll a 6" rule.</summary>
     [HttpPost("enter-all")]
     public ActionResult<GameStateDto> EnterAll([FromBody] DevColorRequest request)
     {
@@ -123,7 +107,6 @@ public class DevController : ControllerBase
         }
     }
 
-    /// <summary>Sends every piece of a color straight to the Goal. Ends the game (declares that color the winner) if it completes the player.</summary>
     [HttpPost("finish-all")]
     public ActionResult<GameStateDto> FinishAll([FromBody] DevColorRequest request)
     {
@@ -140,8 +123,6 @@ public class DevController : ControllerBase
         }
     }
 
-    /// <summary>Resets every piece of a color back to Base (yard) — the reverse of enter-all, for re-running a scenario from scratch.</summary>
-    [HttpPost("reset-base")]
     public ActionResult<GameStateDto> ResetToBase([FromBody] DevColorRequest request)
     {
         if (!TryGetGame(out var game, out var error)) return error!;
@@ -157,7 +138,6 @@ public class DevController : ControllerBase
         }
     }
 
-    /// <summary>Generic "teleport one piece anywhere" endpoint — forces a single piece into an arbitrary state/path index. The building block for any edge case that doesn't have a dedicated shortcut above.</summary>
     [HttpPost("force-piece")]
     public ActionResult<GameStateDto> ForcePiece([FromBody] DevForcePieceRequest request)
     {
@@ -174,7 +154,6 @@ public class DevController : ControllerBase
         }
     }
 
-    /// <summary>Jumps straight to a given player's turn.</summary>
     [HttpPost("set-turn")]
     public ActionResult<GameStateDto> SetTurn([FromBody] DevSetTurnRequest request)
     {
@@ -191,7 +170,6 @@ public class DevController : ControllerBase
         }
     }
 
-    /// <summary>Directly sets the consecutive-sixes counter, to test the "three sixes in a row forfeits the turn" edge case.</summary>
     [HttpPost("set-sixes")]
     public ActionResult<GameStateDto> SetSixes([FromBody] DevSetSixesRequest request)
     {
