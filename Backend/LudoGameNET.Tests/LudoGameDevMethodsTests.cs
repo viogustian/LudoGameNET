@@ -64,6 +64,68 @@ public class LudoGameDevMethodsTests
     }
 
     [Test]
+    public void DevRemoveFromCurrentSquare_RemovesOnBoardPieceFromSquare()
+    {
+        var game = NewPlayingGame(PlayerColor.Red, PlayerColor.Blue);
+        var redPlayer = game.Players[0];
+        var piece = redPlayer.Pieces[0];
+
+        // Move piece to the board
+        piece.State = PieceState.OnBoard;
+        piece.PathIndex = 5;
+        var square = game.GetSquareAtPathIndex(PlayerColor.Red, 5);
+        square.Pieces.Add(piece);
+
+        // Verify piece is on the square
+        Assert.That(square.Pieces, Does.Contain(piece));
+
+        // Use reflection to call the private method
+        var method = typeof(LudoGame).GetMethod("DevRemoveFromCurrentSquare", 
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        method?.Invoke(game, new object[] { piece });
+
+        // Piece should be removed from square
+        Assert.That(square.Pieces, Does.Not.Contain(piece));
+    }
+
+    [Test]
+    public void DevRemoveFromCurrentSquare_DoesNotRemoveBasePiece()
+    {
+        var game = NewPlayingGame(PlayerColor.Red, PlayerColor.Blue);
+        var redPlayer = game.Players[0];
+        var piece = redPlayer.Pieces[0];
+
+        // Piece is in base state
+        Assert.That(piece.State, Is.EqualTo(PieceState.Base));
+
+        // Use reflection to call the private method
+        var method = typeof(LudoGame).GetMethod("DevRemoveFromCurrentSquare", 
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        
+        // Should not throw even though piece is in base
+        Assert.DoesNotThrow(() => method?.Invoke(game, new object[] { piece }));
+    }
+
+    [Test]
+    public void DevRemoveFromCurrentSquare_DoesNotRemoveFinishedPiece()
+    {
+        var game = NewPlayingGame(PlayerColor.Red, PlayerColor.Blue);
+        var redPlayer = game.Players[0];
+        var piece = redPlayer.Pieces[0];
+
+        // Move piece to finished state
+        piece.State = PieceState.Finished;
+        piece.PathIndex = LudoGame.TotalPathLength - 1;
+
+        // Use reflection to call the private method
+        var method = typeof(LudoGame).GetMethod("DevRemoveFromCurrentSquare", 
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        
+        // Should not throw even though piece is finished
+        Assert.DoesNotThrow(() => method?.Invoke(game, new object[] { piece }));
+    }
+
+    [Test]
     public void DevFinishAllPieces_MovesAllPiecesToFinishedState()
     {
         var game = NewPlayingGame(PlayerColor.Red, PlayerColor.Blue);
@@ -217,6 +279,19 @@ public class LudoGameDevMethodsTests
 
         Assert.Throws<ArgumentException>(() => 
             game.DevForcePiece(PlayerColor.Red, 999, PieceState.Base, null));
+    }
+
+    [Test]
+    public void DevForcePiece_UnknownPieceState_ThrowsArgumentException()
+    {
+        var game = NewPlayingGame(PlayerColor.Red, PlayerColor.Blue);
+
+        // Create an invalid PieceState value by casting from an int that doesn't correspond to any enum value
+        // PieceState enum has values: Base (0), OnBoard (1), Finished (2)
+        var invalidState = (PieceState)999;
+
+        Assert.Throws<ArgumentException>(() => 
+            game.DevForcePiece(PlayerColor.Red, 0, invalidState, null));
     }
 
     [Test]
