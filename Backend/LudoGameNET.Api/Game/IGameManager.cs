@@ -19,9 +19,6 @@ public class GameManager : IGameManager
 
     public LudoGame? CurrentGame => _currentGame;
 
-    // Loggers are optional (default to no-ops) so GameManager can still be
-    // constructed directly with `new GameManager()` in unit tests; ASP.NET
-    // Core's DI container supplies the real ILogger<T> instances at runtime.
     public GameManager(ILogger<GameManager>? logger = null, ILogger<LudoGame>? gameLogger = null)
     {
         _logger = logger ?? NullLogger<GameManager>.Instance;

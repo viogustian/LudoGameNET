@@ -369,4 +369,111 @@ public class DevControllerTests
         // Assert
         Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
     }
+
+    // Branch: Value == null but Lock == true → DiceLocked must stay false (HasValue && Lock == false)
+    [Test]
+    public void SetDice_NullValueWithLockTrue_DoesNotLock()
+    {
+        // Arrange
+        var game = new LudoGame(new List<PlayerColor> { PlayerColor.Red, PlayerColor.Blue });
+        _gameManagerMock.Setup(gm => gm.CurrentGame).Returns(game);
+
+        // Act
+        var result = _controller.SetDice(new DevSetDiceRequest { Value = null, Lock = true });
+
+        // Assert
+        Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
+        var diceStatus = (result.Result as OkObjectResult)!.Value as DevDiceStatusDto;
+        Assert.That(diceStatus!.ForcedValue, Is.Null);
+        Assert.That(diceStatus.Locked, Is.False);
+    }
+
+    // Branch: game.Dice.Value != 0 → CurrentDiceValue is non-null in the ternary
+    [Test]
+    public void GetDiceStatus_AfterRoll_ReturnsNonNullCurrentDiceValue()
+    {
+        // Arrange
+        var game = new LudoGame(new List<PlayerColor> { PlayerColor.Red, PlayerColor.Blue });
+        game.StartGame();
+        game.ForcedDiceValue = 6;
+        game.RollDice(); // forces Dice.Value = 6
+        _gameManagerMock.Setup(gm => gm.CurrentGame).Returns(game);
+
+        // Act
+        var result = _controller.GetDiceStatus();
+
+        // Assert
+        Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
+        var diceStatus = (result.Result as OkObjectResult)!.Value as DevDiceStatusDto;
+        Assert.That(diceStatus!.CurrentDiceValue, Is.Not.Null);
+    }
+
+    // Branch: non-development environment guard on SetDice, ClearDice, EnterAll, FinishAll,
+    // ResetToBase, ForcePiece, SetTurn, SetSixes paths (TryGetGame returns false for !IsDevelopment)
+    [Test]
+    public void SetDice_NotDevelopmentEnvironment_ReturnsNotFound()
+    {
+        _envMock.Setup(e => e.EnvironmentName).Returns("Production");
+        var result = _controller.SetDice(new DevSetDiceRequest { Value = 3 });
+        Assert.That(result.Result, Is.InstanceOf<NotFoundObjectResult>());
+    }
+
+    [Test]
+    public void ClearDice_NotDevelopmentEnvironment_ReturnsNotFound()
+    {
+        _envMock.Setup(e => e.EnvironmentName).Returns("Production");
+        var result = _controller.ClearDice();
+        Assert.That(result.Result, Is.InstanceOf<NotFoundObjectResult>());
+    }
+
+    [Test]
+    public void EnterAll_NotDevelopmentEnvironment_ReturnsNotFound()
+    {
+        _envMock.Setup(e => e.EnvironmentName).Returns("Production");
+        var result = _controller.EnterAll(new DevColorRequest { Color = PlayerColor.Red });
+        Assert.That(result.Result, Is.InstanceOf<NotFoundObjectResult>());
+    }
+
+    [Test]
+    public void FinishAll_NotDevelopmentEnvironment_ReturnsNotFound()
+    {
+        _envMock.Setup(e => e.EnvironmentName).Returns("Production");
+        var result = _controller.FinishAll(new DevColorRequest { Color = PlayerColor.Red });
+        Assert.That(result.Result, Is.InstanceOf<NotFoundObjectResult>());
+    }
+
+    [Test]
+    public void ResetToBase_NotDevelopmentEnvironment_ReturnsNotFound()
+    {
+        _envMock.Setup(e => e.EnvironmentName).Returns("Production");
+        var result = _controller.ResetToBase(new DevColorRequest { Color = PlayerColor.Red });
+        Assert.That(result.Result, Is.InstanceOf<NotFoundObjectResult>());
+    }
+
+    [Test]
+    public void ForcePiece_NotDevelopmentEnvironment_ReturnsNotFound()
+    {
+        _envMock.Setup(e => e.EnvironmentName).Returns("Production");
+        var result = _controller.ForcePiece(new DevForcePieceRequest
+        {
+            Color = PlayerColor.Red, PieceId = 0, State = PieceState.OnBoard, PathIndex = 0
+        });
+        Assert.That(result.Result, Is.InstanceOf<NotFoundObjectResult>());
+    }
+
+    [Test]
+    public void SetTurn_NotDevelopmentEnvironment_ReturnsNotFound()
+    {
+        _envMock.Setup(e => e.EnvironmentName).Returns("Production");
+        var result = _controller.SetTurn(new DevSetTurnRequest { PlayerIndex = 0 });
+        Assert.That(result.Result, Is.InstanceOf<NotFoundObjectResult>());
+    }
+
+    [Test]
+    public void SetSixes_NotDevelopmentEnvironment_ReturnsNotFound()
+    {
+        _envMock.Setup(e => e.EnvironmentName).Returns("Production");
+        var result = _controller.SetSixes(new DevSetSixesRequest { Count = 1 });
+        Assert.That(result.Result, Is.InstanceOf<NotFoundObjectResult>());
+    }
 }
