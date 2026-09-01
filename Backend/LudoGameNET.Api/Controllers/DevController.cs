@@ -135,6 +135,7 @@ public class DevController : ControllerBase
         }
     }
 
+    [HttpPost("reset-to-base")]
     public ActionResult<GameStateDto> ResetToBase([FromBody] DevColorRequest request)
     {
         if (!TryGetGame(out var game, out var error)) return error!;
