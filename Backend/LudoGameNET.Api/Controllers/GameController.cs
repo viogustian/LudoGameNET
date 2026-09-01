@@ -13,10 +13,12 @@ namespace LudoGameNET.Api.Controllers;
 public class GameController : ControllerBase
 {
     private readonly IGameManager _gameManager;
+    private readonly ILogger<GameController> _logger;
 
-    public GameController(IGameManager gameManager)
+    public GameController(IGameManager gameManager, ILogger<GameController> logger)
     {
         _gameManager = gameManager;
+        _logger = logger;
     }
 
     [HttpPost]
@@ -29,6 +31,7 @@ public class GameController : ControllerBase
         }
         catch (Exception ex) when (ex is ArgumentException or ArgumentNullException)
         {
+            _logger.LogWarning(ex, "Rejected StartGame request with colors {Colors}", request.Colors);
             return BadRequest(new { error = ex.Message });
         }
     }
@@ -63,17 +66,23 @@ public class GameController : ControllerBase
         var game = _gameManager.CurrentGame;
         if (game is null)
         {
+            _logger.LogWarning("RollDice requested but no game has been started");
             return NotFound(new { error = "No game has been started yet." });
         }
 
         if (game.State != GameState.Playing)
         {
+            _logger.LogWarning("RollDice rejected because the game state is {GameState}", game.State);
             return BadRequest(new { error = "The game is not currently in progress." });
         }
 
         var diceValue = game.RollDice();
         var currentPlayer = game.GetCurrentPlayer();
         var validPieces = game.GetValidPieces(currentPlayer, diceValue);
+
+        _logger.LogInformation(
+            "Player {PlayerId} ({PlayerColor}) rolled {DiceValue} with {ValidPieceCount} valid piece(s) to move",
+            currentPlayer.Id, currentPlayer.Color, diceValue, validPieces.Count);
 
         if (validPieces.Count == 0)
         {
@@ -120,6 +129,9 @@ public class GameController : ControllerBase
         var piece = currentPlayer.Pieces.FirstOrDefault(p => p.Id == request.PieceId);
         if (piece is null)
         {
+            _logger.LogWarning(
+                "MovePiece rejected: player {PlayerId} has no piece with id {PieceId}",
+                currentPlayer.Id, request.PieceId);
             return BadRequest(new { error = $"Current player has no piece with id {request.PieceId}." });
         }
 
@@ -130,6 +142,10 @@ public class GameController : ControllerBase
         }
         catch (Exception ex) when (ex is InvalidOperationException or ArgumentException)
         {
+            _logger.LogWarning(
+                ex,
+                "MovePiece rejected for player {PlayerId}, piece {PieceId}, dice value {DiceValue}",
+                currentPlayer.Id, piece.Id, request.DiceValue);
             return BadRequest(new { error = ex.Message });
         }
     }

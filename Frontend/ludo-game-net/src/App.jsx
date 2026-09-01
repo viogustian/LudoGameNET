@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import TargetCursor from './components/TargetCursor/TargetCursor.jsx';
 import Header from './components/common/Header.jsx';
 import ErrorBanner from './components/common/ErrorBanner.jsx';
 import WinnerModal from './components/common/WinnerModal.jsx';
+import AboutModal from './components/common/AboutModal.jsx';
 import PlayerSetup from './components/setup/PlayerSetup.jsx';
 import Board from './components/board/Board.jsx';
 import TurnPanel from './components/sidebar/TurnPanel.jsx';
@@ -11,6 +13,7 @@ import DevTools from './components/devtools/DevTools.jsx';
 import { DEV_TOOLS_ENABLED } from './config/devtools.js';
 
 export default function App() {
+  const [showAbout, setShowAbout] = useState(false);
   const gameStateApi = useGameState();
   const {
     screen, selectedColors, gameState, diceValue, diceDisplayValue, rollToken, validPieces,
@@ -31,7 +34,13 @@ export default function App() {
     >
       <TargetCursor spinDuration={2} hideDefaultCursor={true} parallaxOn={true} />
 
-      <Header screen={screen} muted={muted} onToggleMuted={toggleMuted} onResetGame={resetGame} />
+      <Header
+        screen={screen}
+        muted={muted}
+        onToggleMuted={toggleMuted}
+        onResetGame={resetGame}
+        onShowAbout={() => setShowAbout(true)}
+      />
 
       <ErrorBanner message={error} />
 
@@ -76,6 +85,8 @@ export default function App() {
         winnerColor={gameState?.state === 'Finished' ? gameState.winnerColor : null}
         onPlayAgain={resetGame}
       />
+
+      <AboutModal open={showAbout} onClose={() => setShowAbout(false)} />
 
       {DEV_TOOLS_ENABLED && <DevTools uiState={gameStateApi} />}
     </div>

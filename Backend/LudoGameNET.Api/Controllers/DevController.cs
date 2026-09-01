@@ -12,11 +12,13 @@ public class DevController : ControllerBase
 {
     private readonly IGameManager _gameManager;
     private readonly IWebHostEnvironment _env;
+    private readonly ILogger<DevController> _logger;
 
-    public DevController(IGameManager gameManager, IWebHostEnvironment env)
+    public DevController(IGameManager gameManager, IWebHostEnvironment env, ILogger<DevController> logger)
     {
         _gameManager = gameManager;
         _env = env;
+        _logger = logger;
     }
 
     private bool TryGetGame(out LudoGame game, out ActionResult? error)
@@ -54,6 +56,10 @@ public class DevController : ControllerBase
         game.ForcedDiceValue = request.Value;
         game.DiceLocked = request.Value.HasValue && request.Lock;
 
+        _logger.LogWarning(
+            "[DEV] Forced next dice roll to {ForcedValue} (locked: {Locked})",
+            request.Value, game.DiceLocked);
+
         return Ok(new DevDiceStatusDto
         {
             ForcedValue = game.ForcedDiceValue,
@@ -69,6 +75,8 @@ public class DevController : ControllerBase
 
         game.ForcedDiceValue = null;
         game.DiceLocked = false;
+
+        _logger.LogWarning("[DEV] Cleared the forced dice value");
 
         return Ok(new DevDiceStatusDto
         {
@@ -99,10 +107,12 @@ public class DevController : ControllerBase
         try
         {
             game.DevEnterAllPieces(request.Color);
+            _logger.LogWarning("[DEV] Entered all base pieces onto the board for {Color}", request.Color);
             return Ok(GameStateMapper.ToGameStateDto(game));
         }
         catch (Exception ex) when (ex is InvalidOperationException or ArgumentException)
         {
+            _logger.LogWarning(ex, "[DEV] EnterAll rejected for {Color}", request.Color);
             return BadRequest(new { error = ex.Message });
         }
     }
@@ -115,10 +125,12 @@ public class DevController : ControllerBase
         try
         {
             game.DevFinishAllPieces(request.Color);
+            _logger.LogWarning("[DEV] Finished all pieces for {Color}", request.Color);
             return Ok(GameStateMapper.ToGameStateDto(game));
         }
         catch (Exception ex) when (ex is InvalidOperationException or ArgumentException)
         {
+            _logger.LogWarning(ex, "[DEV] FinishAll rejected for {Color}", request.Color);
             return BadRequest(new { error = ex.Message });
         }
     }
@@ -130,10 +142,12 @@ public class DevController : ControllerBase
         try
         {
             game.DevResetPiecesToBase(request.Color);
+            _logger.LogWarning("[DEV] Reset all pieces to base for {Color}", request.Color);
             return Ok(GameStateMapper.ToGameStateDto(game));
         }
         catch (Exception ex) when (ex is InvalidOperationException or ArgumentException)
         {
+            _logger.LogWarning(ex, "[DEV] ResetToBase rejected for {Color}", request.Color);
             return BadRequest(new { error = ex.Message });
         }
     }
@@ -146,10 +160,17 @@ public class DevController : ControllerBase
         try
         {
             game.DevForcePiece(request.Color, request.PieceId, request.State, request.PathIndex);
+            _logger.LogWarning(
+                "[DEV] Forced piece {PieceId} ({Color}) to state {State} at path index {PathIndex}",
+                request.PieceId, request.Color, request.State, request.PathIndex);
             return Ok(GameStateMapper.ToGameStateDto(game));
         }
         catch (Exception ex) when (ex is InvalidOperationException or ArgumentException)
         {
+            _logger.LogWarning(
+                ex,
+                "[DEV] ForcePiece rejected for piece {PieceId} ({Color})",
+                request.PieceId, request.Color);
             return BadRequest(new { error = ex.Message });
         }
     }
@@ -162,10 +183,12 @@ public class DevController : ControllerBase
         try
         {
             game.DevSetCurrentPlayer(request.PlayerIndex);
+            _logger.LogWarning("[DEV] Forced current turn to player index {PlayerIndex}", request.PlayerIndex);
             return Ok(GameStateMapper.ToGameStateDto(game));
         }
         catch (Exception ex) when (ex is InvalidOperationException or ArgumentException)
         {
+            _logger.LogWarning(ex, "[DEV] SetTurn rejected for player index {PlayerIndex}", request.PlayerIndex);
             return BadRequest(new { error = ex.Message });
         }
     }
@@ -178,10 +201,12 @@ public class DevController : ControllerBase
         try
         {
             game.DevSetConsecutiveSixes(request.Count);
+            _logger.LogWarning("[DEV] Forced consecutive sixes count to {Count}", request.Count);
             return Ok(GameStateMapper.ToGameStateDto(game));
         }
         catch (Exception ex) when (ex is InvalidOperationException or ArgumentException)
         {
+            _logger.LogWarning(ex, "[DEV] SetSixes rejected for count {Count}", request.Count);
             return BadRequest(new { error = ex.Message });
         }
     }

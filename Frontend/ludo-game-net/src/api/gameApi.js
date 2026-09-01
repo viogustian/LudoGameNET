@@ -28,11 +28,6 @@ export const gameApi = {
   movePiece: (pieceId, diceValue) =>
     callApi('/move', { method: 'POST', body: JSON.stringify({ pieceId, diceValue }) }),
 
-  // ---------------------------------------------------------------------
-  // Dev-tools only. The backend refuses all of these (404) unless it's
-  // running in the Development environment, so they're safe to ship even
-  // if this bundle somehow ends up pointed at a non-dev API.
-  // ---------------------------------------------------------------------
   devGetDiceStatus: () => callApi('/dev/dice', { method: 'GET' }),
   devSetDice: (value, lock) =>
     callApi('/dev/dice', { method: 'POST', body: JSON.stringify({ value, lock }) }),

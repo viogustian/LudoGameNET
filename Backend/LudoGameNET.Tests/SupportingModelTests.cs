@@ -2,24 +2,25 @@ using LudoGameNET.Api.Enums;
 using LudoGameNET.Api.Game;
 using LudoGameNET.Api.Interfaces;
 using LudoGameNET.Api.Models;
-using Xunit;
+using NUnit.Framework;
 
 namespace LudoGameNET.Tests;
 
+[TestFixture]
 public class PieceTests
 {
-    [Fact]
+    [Test]
     public void Constructor_SetsAllProperties()
     {
         var piece = new Piece(2, PlayerColor.Yellow, PieceState.OnBoard, 7);
 
-        Assert.Equal(2, piece.Id);
-        Assert.Equal(PlayerColor.Yellow, piece.Color);
-        Assert.Equal(PieceState.OnBoard, piece.State);
-        Assert.Equal(7, piece.PathIndex);
+        Assert.That(piece.Id, Is.EqualTo(2));
+        Assert.That(piece.Color, Is.EqualTo(PlayerColor.Yellow));
+        Assert.That(piece.State, Is.EqualTo(PieceState.OnBoard));
+        Assert.That(piece.PathIndex, Is.EqualTo(7));
     }
 
-    [Fact]
+    [Test]
     public void StateAndPathIndex_AreMutable()
     {
         var piece = new Piece(0, PlayerColor.Red, PieceState.Base, null);
@@ -27,65 +28,68 @@ public class PieceTests
         piece.State = PieceState.OnBoard;
         piece.PathIndex = 0;
 
-        Assert.Equal(PieceState.OnBoard, piece.State);
-        Assert.Equal(0, piece.PathIndex);
+        Assert.That(piece.State, Is.EqualTo(PieceState.OnBoard));
+        Assert.That(piece.PathIndex, Is.EqualTo(0));
     }
 }
 
+[TestFixture]
 public class PlayerTests
 {
-    [Fact]
+    [Test]
     public void Constructor_SetsIdColorAndPieces()
     {
         var pieces = LudoGame.CreatePiecesForColor(PlayerColor.Blue);
         var player = new Player(1, PlayerColor.Blue, pieces);
 
-        Assert.Equal(1, player.Id);
-        Assert.Equal(PlayerColor.Blue, player.Color);
-        Assert.Same(pieces, player.Pieces);
+        Assert.That(player.Id, Is.EqualTo(1));
+        Assert.That(player.Color, Is.EqualTo(PlayerColor.Blue));
+        Assert.That(player.Pieces, Is.SameAs(pieces));
     }
 
-    [Fact]
+    [Test]
     public void Constructor_NullPieces_DefaultsToEmptyList()
     {
         var player = new Player(0, PlayerColor.Red, null!);
 
-        Assert.NotNull(player.Pieces);
-        Assert.Empty(player.Pieces);
+        Assert.That(player.Pieces, Is.Not.Null);
+        Assert.That(player.Pieces, Is.Empty);
     }
 }
 
+[TestFixture]
 public class DiceTests
 {
-    [Fact]
+    [Test]
     public void Value_DefaultsToZeroAndIsSettable()
     {
         var dice = new Dice();
 
-        Assert.Equal(0, dice.Value);
+        Assert.That(dice.Value, Is.EqualTo(0));
 
         dice.Value = 5;
 
-        Assert.Equal(5, dice.Value);
+        Assert.That(dice.Value, Is.EqualTo(5));
     }
 }
 
+[TestFixture]
 public class PointTests
 {
-    [Fact]
+    [Test]
     public void Equality_IsBasedOnRowAndColumn()
     {
         var a = new Point(3, 4);
         var b = new Point(3, 4);
         var c = new Point(4, 3);
 
-        Assert.Equal(a, b);
-        Assert.NotEqual(a, c);
-        Assert.True(a == b);
-        Assert.False(a == c);
+        Assert.That(a, Is.EqualTo(b));
+        Assert.That(a, Is.Not.EqualTo(c));
+        Assert.That(a == b, Is.True);
+        Assert.That(a == c, Is.False);
     }
 
-    [Fact]
+    [Test]
     public void CanBeUsedAsADictionaryKey()
     {
         var dict = new Dictionary<Point, string>
@@ -93,37 +97,39 @@ public class PointTests
             [new Point(1, 2)] = "value",
         };
 
-        Assert.Equal("value", dict[new Point(1, 2)]);
+        Assert.That(dict[new Point(1, 2)], Is.EqualTo("value"));
     }
 }
 
+[TestFixture]
 public class SquareTests
 {
-    [Fact]
+    [Test]
     public void Constructor_SetsAllProperties()
     {
         var piece = new Piece(0, PlayerColor.Green, PieceState.OnBoard, 4);
         var square = new Square(new Point(1, 7), SquareType.HomeStretch, PlayerColor.Green, new List<IPiece> { piece });
 
-        Assert.Equal(new Point(1, 7), square.Position);
-        Assert.Equal(SquareType.HomeStretch, square.Type);
-        Assert.Equal(PlayerColor.Green, square.HomeColor);
-        Assert.Contains(piece, square.Pieces);
+        Assert.That(square.Position, Is.EqualTo(new Point(1, 7)));
+        Assert.That(square.Type, Is.EqualTo(SquareType.HomeStretch));
+        Assert.That(square.HomeColor, Is.EqualTo(PlayerColor.Green));
+        Assert.That(square.Pieces, Does.Contain(piece));
     }
 
-    [Fact]
+    [Test]
     public void Constructor_NullPieces_DefaultsToEmptyList()
     {
         var square = new Square(new Point(0, 0), SquareType.Common, PlayerColor.Red, null!);
 
-        Assert.NotNull(square.Pieces);
-        Assert.Empty(square.Pieces);
+        Assert.That(square.Pieces, Is.Not.Null);
+        Assert.That(square.Pieces, Is.Empty);
     }
 }
 
+[TestFixture]
 public class BoardTests
 {
-    [Fact]
+    [Test]
     public void Constructor_StoresProvidedSquaresGrid()
     {
         var squares = new Square[2, 2];
@@ -133,32 +139,33 @@ public class BoardTests
 
         var board = new Board(squares);
 
-        Assert.Same(squares, board.Squares);
+        Assert.That(board.Squares, Is.SameAs(squares));
     }
 }
 
+[TestFixture]
 public class GameManagerTests
 {
-    [Fact]
+    [Test]
     public void CurrentGame_IsNullBeforeAnyGameIsCreated()
     {
         var manager = new GameManager();
 
-        Assert.Null(manager.CurrentGame);
+        Assert.That(manager.CurrentGame, Is.Null);
     }
 
-    [Fact]
+    [Test]
     public void CreateGame_StartsTheGameAndExposesItAsCurrentGame()
     {
         var manager = new GameManager();
 
         var game = manager.CreateGame(new List<PlayerColor> { PlayerColor.Red, PlayerColor.Blue });
 
-        Assert.Equal(GameState.Playing, game.State);
-        Assert.Same(game, manager.CurrentGame);
+        Assert.That(game.State, Is.EqualTo(GameState.Playing));
+        Assert.That(manager.CurrentGame, Is.SameAs(game));
     }
 
-    [Fact]
+    [Test]
     public void CreateGame_CalledAgain_ReplacesThePreviousGame()
     {
         var manager = new GameManager();
@@ -166,16 +173,16 @@ public class GameManagerTests
 
         var second = manager.CreateGame(new List<PlayerColor> { PlayerColor.Green, PlayerColor.Yellow });
 
-        Assert.Same(second, manager.CurrentGame);
-        Assert.NotSame(first, manager.CurrentGame);
+        Assert.That(manager.CurrentGame, Is.SameAs(second));
+        Assert.That(manager.CurrentGame, Is.Not.SameAs(first));
     }
 
-    [Fact]
+    [Test]
     public void CreateGame_InvalidColors_ThrowsAndDoesNotCreateGame()
     {
         var manager = new GameManager();
 
         Assert.Throws<ArgumentException>(() => manager.CreateGame(new List<PlayerColor> { PlayerColor.Red }));
-        Assert.Null(manager.CurrentGame);
+        Assert.That(manager.CurrentGame, Is.Null);
     }
 }
