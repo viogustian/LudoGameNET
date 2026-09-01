@@ -1,10 +1,11 @@
 using LudoGameNET.Api.Enums;
 using LudoGameNET.Api.Interfaces;
 using LudoGameNET.Api.Models;
-using Xunit;
+using NUnit.Framework;
 
 namespace LudoGameNET.Tests;
 
+[TestFixture]
 public class LudoGameMovementRuleTests
 {
     private static LudoGame NewGame(params PlayerColor[] colors) =>
@@ -13,68 +14,67 @@ public class LudoGameMovementRuleTests
     private static IPiece MakePiece(PlayerColor color, PieceState state, int? pathIndex, int id = 0) =>
         new Piece(id, color, state, pathIndex);
 
-    [Theory]
-    [InlineData(6, true)]
-    [InlineData(1, false)]
-    [InlineData(5, false)]
+    [TestCase(6, true)]
+    [TestCase(1, false)]
+    [TestCase(5, false)]
     public void CanEnterBoard_OnlyTrueForBasePieceWithSix(int diceValue, bool expected)
     {
         var game = NewGame(PlayerColor.Red, PlayerColor.Blue);
         var piece = MakePiece(PlayerColor.Red, PieceState.Base, null);
 
-        Assert.Equal(expected, game.CanEnterBoard(piece, diceValue));
+        Assert.That(game.CanEnterBoard(piece, diceValue), Is.EqualTo(expected));
     }
 
-    [Fact]
+    [Test]
     public void CanEnterBoard_FalseWhenPieceIsNotInBase()
     {
         var game = NewGame(PlayerColor.Red, PlayerColor.Blue);
         var piece = MakePiece(PlayerColor.Red, PieceState.OnBoard, 3);
 
-        Assert.False(game.CanEnterBoard(piece, 6));
+        Assert.That(game.CanEnterBoard(piece, 6), Is.False);
     }
 
-    [Fact]
+    [Test]
     public void CanMove_FalseForPieceNotOnBoard()
     {
         var game = NewGame(PlayerColor.Red, PlayerColor.Blue);
         var basePiece = MakePiece(PlayerColor.Red, PieceState.Base, null);
         var finishedPiece = MakePiece(PlayerColor.Red, PieceState.Finished, LudoGame.TotalPathLength - 1);
 
-        Assert.False(game.CanMove(basePiece, 3));
-        Assert.False(game.CanMove(finishedPiece, 3));
+        Assert.That(game.CanMove(basePiece, 3), Is.False);
+        Assert.That(game.CanMove(finishedPiece, 3), Is.False);
     }
 
-    [Fact]
+    [Test]
     public void CanMove_TrueWhenStepsStayWithinPath()
     {
         var game = NewGame(PlayerColor.Red, PlayerColor.Blue);
         var piece = MakePiece(PlayerColor.Red, PieceState.OnBoard, LudoGame.TotalPathLength - 4);
 
-        Assert.True(game.CanMove(piece, 3)); // lands exactly on the last index
+        Assert.That(game.CanMove(piece, 3), Is.True); // lands exactly on the last index
     }
 
-    [Fact]
+    [Test]
     public void CanMove_FalseWhenStepsOvershootThePath()
     {
         var game = NewGame(PlayerColor.Red, PlayerColor.Blue);
         var piece = MakePiece(PlayerColor.Red, PieceState.OnBoard, LudoGame.TotalPathLength - 4);
 
-        Assert.False(game.CanMove(piece, 6)); // would land past the last index
+        Assert.That(game.CanMove(piece, 6), Is.False); // would land past the last index
     }
 
-    [Fact]
+    [Test]
     public void GetNextPathIndex_AddsStepsToCurrentIndex_TreatingNullAsZero()
     {
         var game = NewGame(PlayerColor.Red, PlayerColor.Blue);
         var freshPiece = MakePiece(PlayerColor.Red, PieceState.Base, null);
         var onBoardPiece = MakePiece(PlayerColor.Red, PieceState.OnBoard, 10);
 
-        Assert.Equal(4, game.GetNextPathIndex(freshPiece, 4));
-        Assert.Equal(16, game.GetNextPathIndex(onBoardPiece, 6));
+        Assert.That(game.GetNextPathIndex(freshPiece, 4), Is.EqualTo(4));
+        Assert.That(game.GetNextPathIndex(onBoardPiece, 6), Is.EqualTo(16));
     }
 
-    [Fact]
+    [Test]
     public void HasReachedFinish_TrueWhenStateIsFinishedOrAtLastIndex()
     {
         var game = NewGame(PlayerColor.Red, PlayerColor.Blue);
@@ -82,12 +82,12 @@ public class LudoGameMovementRuleTests
         var finishedByIndex = MakePiece(PlayerColor.Red, PieceState.OnBoard, LudoGame.TotalPathLength - 1);
         var midPath = MakePiece(PlayerColor.Red, PieceState.OnBoard, 5);
 
-        Assert.True(game.HasReachedFinish(finishedByState));
-        Assert.True(game.HasReachedFinish(finishedByIndex));
-        Assert.False(game.HasReachedFinish(midPath));
+        Assert.That(game.HasReachedFinish(finishedByState), Is.True);
+        Assert.That(game.HasReachedFinish(finishedByIndex), Is.True);
+        Assert.That(game.HasReachedFinish(midPath), Is.False);
     }
 
-    [Fact]
+    [Test]
     public void GetSquareAtPathIndex_ReturnsTheSquareOnThatColorsPath()
     {
         var game = NewGame(PlayerColor.Red, PlayerColor.Blue);
@@ -95,10 +95,10 @@ public class LudoGameMovementRuleTests
 
         var square = game.GetSquareAtPathIndex(PlayerColor.Red, 5);
 
-        Assert.Equal(expectedPoint, square.Position);
+        Assert.That(square.Position, Is.EqualTo(expectedPoint));
     }
 
-    [Fact]
+    [Test]
     public void GetValidPieces_IncludesBasePiecesOnlyOnSix()
     {
         var game = NewGame(PlayerColor.Red, PlayerColor.Blue);
@@ -107,11 +107,11 @@ public class LudoGameMovementRuleTests
         var validOnSix = game.GetValidPieces(player, 6);
         var validOnFour = game.GetValidPieces(player, 4);
 
-        Assert.Equal(4, validOnSix.Count); // all 4 base pieces can enter
-        Assert.Empty(validOnFour); // no base pieces can move without a 6
+        Assert.That(validOnSix.Count, Is.EqualTo(4)); // all 4 base pieces can enter
+        Assert.That(validOnFour, Is.Empty); // no base pieces can move without a 6
     }
 
-    [Fact]
+    [Test]
     public void GetValidPieces_IncludesOnBoardPiecesThatCanLegallyMove()
     {
         var game = NewGame(PlayerColor.Red, PlayerColor.Blue);
@@ -126,9 +126,9 @@ public class LudoGameMovementRuleTests
         var validPieces = game.GetValidPieces(player, 3);
 
         // Piece 0 would overshoot (needs <=1 to finish), piece 1 can move fine, base pieces need a 6.
-        Assert.Contains(validPieces, p => p.Id == 1);
-        Assert.DoesNotContain(validPieces, p => p.Id == 0);
-        Assert.DoesNotContain(validPieces, p => p.Id == 2);
-        Assert.DoesNotContain(validPieces, p => p.Id == 3);
+        Assert.That(validPieces.Any(p => p.Id == 1), Is.True);
+        Assert.That(validPieces.Any(p => p.Id == 0), Is.False);
+        Assert.That(validPieces.Any(p => p.Id == 2), Is.False);
+        Assert.That(validPieces.Any(p => p.Id == 3), Is.False);
     }
 }

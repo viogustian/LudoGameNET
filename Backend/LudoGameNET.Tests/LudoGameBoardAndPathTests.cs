@@ -1,32 +1,33 @@
 using LudoGameNET.Api.Enums;
 using LudoGameNET.Api.Interfaces;
 using LudoGameNET.Api.Models;
-using Xunit;
+using NUnit.Framework;
 
 namespace LudoGameNET.Tests;
 
+[TestFixture]
 public class LudoGameBoardAndPathTests
 {
     private static LudoGame NewGame(params PlayerColor[] colors) =>
         new(colors.ToList());
 
-    [Fact]
+    [Test]
     public void CreateBoard_ProducesFullSizeGrid()
     {
         var board = LudoGame.CreateBoard();
 
-        Assert.Equal(LudoGame.BoardSize, board.Squares.GetLength(0));
-        Assert.Equal(LudoGame.BoardSize, board.Squares.GetLength(1));
+        Assert.That(board.Squares.GetLength(0), Is.EqualTo(LudoGame.BoardSize));
+        Assert.That(board.Squares.GetLength(1), Is.EqualTo(LudoGame.BoardSize));
 
         foreach (var square in board.Squares)
         {
-            Assert.NotNull(square);
-            Assert.NotNull(square.Pieces);
-            Assert.Empty(square.Pieces);
+            Assert.That(square, Is.Not.Null);
+            Assert.That(square.Pieces, Is.Not.Null);
+            Assert.That(square.Pieces, Is.Empty);
         }
     }
 
-    [Fact]
+    [Test]
     public void CreateBoard_MarksExactlyTheKnownSafeSquaresAsSafe()
     {
         var board = LudoGame.CreateBoard();
@@ -43,29 +44,27 @@ public class LudoGameBoardAndPathTests
             }
         }
 
-        Assert.Equal(LudoGame.SafeSquares, actualSafePoints);
+        Assert.That(actualSafePoints, Is.EquivalentTo(LudoGame.SafeSquares));
     }
 
-    [Theory]
-    [InlineData(PlayerColor.Red)]
-    [InlineData(PlayerColor.Green)]
-    [InlineData(PlayerColor.Yellow)]
-    [InlineData(PlayerColor.Blue)]
+    [TestCase(PlayerColor.Red)]
+    [TestCase(PlayerColor.Green)]
+    [TestCase(PlayerColor.Yellow)]
+    [TestCase(PlayerColor.Blue)]
     public void CreateBoard_EachColorsFinalHomeStretchSquareIsItsGoal(PlayerColor color)
     {
         var board = LudoGame.CreateBoard();
         var goalPoint = LudoGame.HomeStretches[color][^1];
         var goalSquare = board.Squares[goalPoint.Row, goalPoint.Column];
 
-        Assert.Equal(SquareType.Goal, goalSquare.Type);
-        Assert.Equal(color, goalSquare.HomeColor);
+        Assert.That(goalSquare.Type, Is.EqualTo(SquareType.Goal));
+        Assert.That(goalSquare.HomeColor, Is.EqualTo(color));
     }
 
-    [Theory]
-    [InlineData(PlayerColor.Red)]
-    [InlineData(PlayerColor.Green)]
-    [InlineData(PlayerColor.Yellow)]
-    [InlineData(PlayerColor.Blue)]
+    [TestCase(PlayerColor.Red)]
+    [TestCase(PlayerColor.Green)]
+    [TestCase(PlayerColor.Yellow)]
+    [TestCase(PlayerColor.Blue)]
     public void CreateBoard_NonFinalHomeStretchSquaresAreHomeStretchType(PlayerColor color)
     {
         var board = LudoGame.CreateBoard();
@@ -74,16 +73,15 @@ public class LudoGameBoardAndPathTests
         foreach (var point in stretchPoints.Take(stretchPoints.Count - 1))
         {
             var square = board.Squares[point.Row, point.Column];
-            Assert.Equal(SquareType.HomeStretch, square.Type);
-            Assert.Equal(color, square.HomeColor);
+            Assert.That(square.Type, Is.EqualTo(SquareType.HomeStretch));
+            Assert.That(square.HomeColor, Is.EqualTo(color));
         }
     }
 
-    [Theory]
-    [InlineData(PlayerColor.Red)]
-    [InlineData(PlayerColor.Green)]
-    [InlineData(PlayerColor.Yellow)]
-    [InlineData(PlayerColor.Blue)]
+    [TestCase(PlayerColor.Red)]
+    [TestCase(PlayerColor.Green)]
+    [TestCase(PlayerColor.Yellow)]
+    [TestCase(PlayerColor.Blue)]
     public void CreateBoard_YardHoldingPointsBelongToTheirColorsYard(PlayerColor color)
     {
         var board = LudoGame.CreateBoard();
@@ -91,58 +89,59 @@ public class LudoGameBoardAndPathTests
         foreach (var point in LudoGame.YardHoldingPoints[color])
         {
             var square = board.Squares[point.Row, point.Column];
-            Assert.Equal(SquareType.Yard, square.Type);
-            Assert.Equal(color, square.HomeColor);
+            Assert.That(square.Type, Is.EqualTo(SquareType.Yard));
+            Assert.That(square.HomeColor, Is.EqualTo(color));
         }
     }
 
-    [Fact]
+    [Test]
     public void CreateBoard_CenterSquareIsCommon()
     {
         var board = LudoGame.CreateBoard();
         var center = board.Squares[7, 7];
 
-        Assert.Equal(SquareType.Common, center.Type);
+        Assert.That(center.Type, Is.EqualTo(SquareType.Common));
     }
 
-    [Fact]
+    [Test]
     public void CreatePaths_BuildsAPathForEveryColor()
     {
         var game = NewGame(PlayerColor.Red, PlayerColor.Blue);
 
-        Assert.NotNull(game.Paths);
-        Assert.Equal(Enum.GetValues<PlayerColor>().Length, game.Paths!.Count);
-        Assert.All(game.Paths.Values, path => Assert.Equal(LudoGame.TotalPathLength, path.Count));
+        Assert.That(game.Paths, Is.Not.Null);
+        Assert.That(game.Paths!.Count, Is.EqualTo(Enum.GetValues<PlayerColor>().Length));
+        foreach (var path in game.Paths.Values)
+        {
+            Assert.That(path.Count, Is.EqualTo(LudoGame.TotalPathLength));
+        }
     }
 
-    [Theory]
-    [InlineData(PlayerColor.Red)]
-    [InlineData(PlayerColor.Green)]
-    [InlineData(PlayerColor.Yellow)]
-    [InlineData(PlayerColor.Blue)]
+    [TestCase(PlayerColor.Red)]
+    [TestCase(PlayerColor.Green)]
+    [TestCase(PlayerColor.Yellow)]
+    [TestCase(PlayerColor.Blue)]
     public void BuildPathForColor_StartsAtTheColorsCommonTrackOffset(PlayerColor color)
     {
         var game = NewGame(PlayerColor.Red, PlayerColor.Blue);
         var path = game.BuildPathForColor(color);
         var expectedStart = LudoGame.CommonPath[LudoGame.StartOffsets[color]];
 
-        Assert.Equal(expectedStart, path[0]);
+        Assert.That(path[0], Is.EqualTo(expectedStart));
     }
 
-    [Theory]
-    [InlineData(PlayerColor.Red)]
-    [InlineData(PlayerColor.Green)]
-    [InlineData(PlayerColor.Yellow)]
-    [InlineData(PlayerColor.Blue)]
+    [TestCase(PlayerColor.Red)]
+    [TestCase(PlayerColor.Green)]
+    [TestCase(PlayerColor.Yellow)]
+    [TestCase(PlayerColor.Blue)]
     public void BuildPathForColor_EndsWithTheColorsOwnHomeStretch(PlayerColor color)
     {
         var game = NewGame(PlayerColor.Red, PlayerColor.Blue);
         var path = game.BuildPathForColor(color);
 
-        Assert.Equal(LudoGame.HomeStretches[color], path.Skip(LudoGame.CommonTrackLength - 1));
+        Assert.That(path.Skip(LudoGame.CommonTrackLength - 1), Is.EqualTo(LudoGame.HomeStretches[color]));
     }
 
-    [Fact]
+    [Test]
     public void GetSquare_ValidPosition_ReturnsMatchingBoardSquare()
     {
         var game = NewGame(PlayerColor.Red, PlayerColor.Blue);
@@ -150,14 +149,13 @@ public class LudoGameBoardAndPathTests
 
         var square = game.GetSquare(point);
 
-        Assert.Equal(point, square.Position);
+        Assert.That(square.Position, Is.EqualTo(point));
     }
 
-    [Theory]
-    [InlineData(-1, 0)]
-    [InlineData(0, -1)]
-    [InlineData(15, 0)]
-    [InlineData(0, 15)]
+    [TestCase(-1, 0)]
+    [TestCase(0, -1)]
+    [TestCase(15, 0)]
+    [TestCase(0, 15)]
     public void GetSquare_OutOfRangePosition_ThrowsArgumentOutOfRangeException(int row, int col)
     {
         var game = NewGame(PlayerColor.Red, PlayerColor.Blue);
@@ -165,31 +163,29 @@ public class LudoGameBoardAndPathTests
         Assert.Throws<ArgumentOutOfRangeException>(() => game.GetSquare(new Point(row, col)));
     }
 
-    [Theory]
-    [InlineData(0, 0, true)]
-    [InlineData(14, 14, true)]
-    [InlineData(-1, 0, false)]
-    [InlineData(0, -1, false)]
-    [InlineData(15, 0, false)]
-    [InlineData(0, 15, false)]
+    [TestCase(0, 0, true)]
+    [TestCase(14, 14, true)]
+    [TestCase(-1, 0, false)]
+    [TestCase(0, -1, false)]
+    [TestCase(15, 0, false)]
+    [TestCase(0, 15, false)]
     public void IsValidPosition_ChecksBothAxesAgainstBoardBounds(int row, int col, bool expected)
     {
         var game = NewGame(PlayerColor.Red, PlayerColor.Blue);
 
-        Assert.Equal(expected, game.IsValidPosition(new Point(row, col)));
+        Assert.That(game.IsValidPosition(new Point(row, col)), Is.EqualTo(expected));
     }
 
-    [Theory]
-    [InlineData(SquareType.Safe, true)]
-    [InlineData(SquareType.Yard, true)]
-    [InlineData(SquareType.HomeStretch, true)]
-    [InlineData(SquareType.Goal, true)]
-    [InlineData(SquareType.Common, false)]
+    [TestCase(SquareType.Safe, true)]
+    [TestCase(SquareType.Yard, true)]
+    [TestCase(SquareType.HomeStretch, true)]
+    [TestCase(SquareType.Goal, true)]
+    [TestCase(SquareType.Common, false)]
     public void IsSafePosition_ReflectsSquareType(SquareType type, bool expected)
     {
         var game = NewGame(PlayerColor.Red, PlayerColor.Blue);
         var square = new Square(new Point(0, 0), type, PlayerColor.Red, new List<IPiece>());
 
-        Assert.Equal(expected, game.IsSafePosition(square));
+        Assert.That(game.IsSafePosition(square), Is.EqualTo(expected));
     }
 }

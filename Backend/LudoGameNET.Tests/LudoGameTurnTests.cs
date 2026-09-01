@@ -1,33 +1,34 @@
 using LudoGameNET.Api.Enums;
 using LudoGameNET.Api.Models;
-using Xunit;
+using NUnit.Framework;
 
 namespace LudoGameNET.Tests;
 
+[TestFixture]
 public class LudoGameTurnTests
 {
-    [Fact]
+    [Test]
     public void NextTurn_AdvancesToNextPlayer()
     {
         var game = new LudoGame(new List<PlayerColor> { PlayerColor.Red, PlayerColor.Green, PlayerColor.Blue });
 
         game.NextTurn();
 
-        Assert.Equal(1, game.CurrentPlayerIndex);
+        Assert.That(game.CurrentPlayerIndex, Is.EqualTo(1));
     }
 
-    [Fact]
+    [Test]
     public void NextTurn_WrapsAroundToFirstPlayer()
     {
         var game = new LudoGame(new List<PlayerColor> { PlayerColor.Red, PlayerColor.Green, PlayerColor.Blue });
-        game.CurrentPlayerIndex = 2; 
+        game.CurrentPlayerIndex = 2;
 
         game.NextTurn();
 
-        Assert.Equal(0, game.CurrentPlayerIndex);
+        Assert.That(game.CurrentPlayerIndex, Is.EqualTo(0));
     }
 
-    [Fact]
+    [Test]
     public void HandleTurnAfterMove_NonSixValue_AlwaysPassesTurnAndResetsSixStreak()
     {
         var game = new LudoGame(new List<PlayerColor> { PlayerColor.Red, PlayerColor.Blue });
@@ -35,29 +36,29 @@ public class LudoGameTurnTests
 
         game.HandleTurnAfterMove(4);
 
-        Assert.Equal(1, game.CurrentPlayerIndex);
-        Assert.Equal(0, game.ConsecutiveSixes);
+        Assert.That(game.CurrentPlayerIndex, Is.EqualTo(1));
+        Assert.That(game.ConsecutiveSixes, Is.EqualTo(0));
     }
 
-    [Fact]
+    [Test]
     public void HandleTurnAfterMove_SixValue_KeepsTurnUntilThirdConsecutiveSix()
     {
         var game = new LudoGame(new List<PlayerColor> { PlayerColor.Red, PlayerColor.Blue });
 
         game.HandleTurnAfterMove(6);
-        Assert.Equal(0, game.CurrentPlayerIndex);
-        Assert.Equal(1, game.ConsecutiveSixes);
+        Assert.That(game.CurrentPlayerIndex, Is.EqualTo(0));
+        Assert.That(game.ConsecutiveSixes, Is.EqualTo(1));
 
         game.HandleTurnAfterMove(6);
-        Assert.Equal(0, game.CurrentPlayerIndex);
-        Assert.Equal(2, game.ConsecutiveSixes);
+        Assert.That(game.CurrentPlayerIndex, Is.EqualTo(0));
+        Assert.That(game.ConsecutiveSixes, Is.EqualTo(2));
 
         game.HandleTurnAfterMove(6);
-        Assert.Equal(1, game.CurrentPlayerIndex);
-        Assert.Equal(0, game.ConsecutiveSixes);
+        Assert.That(game.CurrentPlayerIndex, Is.EqualTo(1));
+        Assert.That(game.ConsecutiveSixes, Is.EqualTo(0));
     }
 
-    [Fact]
+    [Test]
     public void HandleTurnAfterMove_SixAfterNonSix_StartsAFreshStreak()
     {
         var game = new LudoGame(new List<PlayerColor> { PlayerColor.Red, PlayerColor.Blue });
@@ -65,7 +66,7 @@ public class LudoGameTurnTests
         game.HandleTurnAfterMove(3);
         game.HandleTurnAfterMove(6);
 
-        Assert.Equal(1, game.CurrentPlayerIndex);
-        Assert.Equal(1, game.ConsecutiveSixes);
+        Assert.That(game.CurrentPlayerIndex, Is.EqualTo(1));
+        Assert.That(game.ConsecutiveSixes, Is.EqualTo(1));
     }
 }

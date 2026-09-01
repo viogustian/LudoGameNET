@@ -3,6 +3,8 @@ using LudoGameNET.Api.Models;
 using LudoGameNET.Api.Enums;
 using System.Linq;
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace LudoGameNET.Api.Models;
 
@@ -23,6 +25,8 @@ public class LudoGame
     public int CurrentPlayerIndex { get; set; }
     public int ConsecutiveSixes { get; set; }
     public GameState State { get; set; }
+
+    private readonly ILogger<LudoGame> _logger;
 
     public static List<Point> CommonPath = new List<Point>
     {
@@ -90,8 +94,10 @@ public class LudoGame
             [PlayerColor.Blue] = new List<Point> { new(10,1), new(10,4), new(13,1), new(13,4) },
         };
 
-    public LudoGame(List<PlayerColor> playerColors, IDice? dice = null)
+    public LudoGame(List<PlayerColor> playerColors, IDice? dice = null, ILogger<LudoGame>? logger = null)
     {
+        _logger = logger ?? NullLogger<LudoGame>.Instance;
+
         List<PlayerColor> colors = playerColors ?? throw new ArgumentNullException(nameof(playerColors));
 
         if(colors.Count < MinPlayers || colors.Count > MaxPlayers)
@@ -224,6 +230,10 @@ public class LudoGame
         square.Pieces.Remove(piece);
         piece.State = PieceState.Base;
         piece.PathIndex = null;
+
+        _logger.LogInformation(
+            "Piece {PieceId} ({PieceColor}) was captured at {Position} and sent back to base",
+            piece.Id, piece.Color, square.Position);
     }
     
     public void HandleCapture(IPiece piece, Square square)
@@ -271,6 +281,10 @@ public class LudoGame
 
             if(ConsecutiveSixes >= MaxConsecutiveSixes)
             {
+                _logger.LogInformation(
+                    "Player {PlayerIndex} rolled {ConsecutiveSixes} consecutive sixes and forfeits the extra turn",
+                    CurrentPlayerIndex, ConsecutiveSixes);
+
                 ConsecutiveSixes = 0;
                 NextTurn();
             }
@@ -391,6 +405,10 @@ public class LudoGame
             var startSquare = GetSquareAtPathIndex(player.Color, piece.PathIndex.GetValueOrDefault());
             startSquare.Pieces.Add(piece);
             HandleCapture(piece, startSquare);
+
+            _logger.LogInformation(
+                "Player {PlayerId} ({PlayerColor}) entered piece {PieceId} onto the board",
+                player.Id, player.Color, piece.Id);
         }
         else
         {
@@ -402,23 +420,35 @@ public class LudoGame
             var oldSquare = GetSquareAtPathIndex(player.Color, piece.PathIndex.GetValueOrDefault());
             oldSquare.Pieces.Remove(piece);
 
+            var previousIndex = piece.PathIndex.GetValueOrDefault();
             var newIndex = GetNextPathIndex(piece, diceValue);
             piece.PathIndex = newIndex;
 
             if(HasReachedFinish(piece))
             {
                 piece.State = PieceState.Finished;
+                _logger.LogInformation(
+                    "Player {PlayerId} ({PlayerColor}) piece {PieceId} reached the finish",
+                    player.Id, player.Color, piece.Id);
             }
             else
             {
                 var newSquare = GetSquareAtPathIndex(player.Color, newIndex);
                 newSquare.Pieces.Add(piece);
                 HandleCapture(piece, newSquare);
+
+                _logger.LogDebug(
+                    "Player {PlayerId} ({PlayerColor}) moved piece {PieceId} from {FromIndex} to {ToIndex} with a roll of {DiceValue}",
+                    player.Id, player.Color, piece.Id, previousIndex, newIndex, diceValue);
             }
         }
 
         if(CheckWinner(player))
         {
+            _logger.LogInformation(
+                "Player {PlayerId} ({PlayerColor}) has won the game",
+                player.Id, player.Color);
+
             EndGame();
             return;
         }

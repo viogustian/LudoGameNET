@@ -1,10 +1,11 @@
 using LudoGameNET.Api.Enums;
 using LudoGameNET.Api.Interfaces;
 using LudoGameNET.Api.Models;
-using Xunit;
+using NUnit.Framework;
 
 namespace LudoGameNET.Tests;
 
+[TestFixture]
 public class LudoGameMovePieceTests
 {
     private static LudoGame NewPlayingGame(params PlayerColor[] colors)
@@ -14,7 +15,7 @@ public class LudoGameMovePieceTests
         return game;
     }
 
-    [Fact]
+    [Test]
     public void MovePiece_GameNotPlaying_ThrowsInvalidOperationException()
     {
         var game = new LudoGame(new List<PlayerColor> { PlayerColor.Red, PlayerColor.Blue }); // not started
@@ -24,7 +25,7 @@ public class LudoGameMovePieceTests
         Assert.Throws<InvalidOperationException>(() => game.MovePiece(player, piece, 6));
     }
 
-    [Fact]
+    [Test]
     public void MovePiece_PieceNotOwnedByPlayer_ThrowsArgumentException()
     {
         var game = NewPlayingGame(PlayerColor.Red, PlayerColor.Blue);
@@ -34,7 +35,7 @@ public class LudoGameMovePieceTests
         Assert.Throws<ArgumentException>(() => game.MovePiece(red, blue.Pieces[0], 6));
     }
 
-    [Fact]
+    [Test]
     public void MovePiece_BasePieceWithoutSix_ThrowsInvalidOperationException()
     {
         var game = NewPlayingGame(PlayerColor.Red, PlayerColor.Blue);
@@ -44,7 +45,7 @@ public class LudoGameMovePieceTests
         Assert.Throws<InvalidOperationException>(() => game.MovePiece(player, piece, 4));
     }
 
-    [Fact]
+    [Test]
     public void MovePiece_BasePieceWithSix_EntersBoardAtColorsStartSquare()
     {
         var game = NewPlayingGame(PlayerColor.Red, PlayerColor.Blue);
@@ -53,14 +54,14 @@ public class LudoGameMovePieceTests
 
         game.MovePiece(player, piece, 6);
 
-        Assert.Equal(PieceState.OnBoard, piece.State);
-        Assert.Equal(0, piece.PathIndex);
+        Assert.That(piece.State, Is.EqualTo(PieceState.OnBoard));
+        Assert.That(piece.PathIndex, Is.EqualTo(0));
 
         var startSquare = game.GetSquareAtPathIndex(PlayerColor.Red, 0);
-        Assert.Contains(piece, startSquare.Pieces);
+        Assert.That(startSquare.Pieces, Does.Contain(piece));
     }
 
-    [Fact]
+    [Test]
     public void MovePiece_EnteringBoardWithSix_KeepsTurnAndIncrementsConsecutiveSixes()
     {
         var game = NewPlayingGame(PlayerColor.Red, PlayerColor.Blue);
@@ -68,11 +69,11 @@ public class LudoGameMovePieceTests
 
         game.MovePiece(player, player.Pieces[0], 6);
 
-        Assert.Equal(0, game.CurrentPlayerIndex); // still Red's turn
-        Assert.Equal(1, game.ConsecutiveSixes);
+        Assert.That(game.CurrentPlayerIndex, Is.EqualTo(0)); // still Red's turn
+        Assert.That(game.ConsecutiveSixes, Is.EqualTo(1));
     }
 
-    [Fact]
+    [Test]
     public void MovePiece_NonSixMove_PassesTurnToNextPlayer()
     {
         var game = NewPlayingGame(PlayerColor.Red, PlayerColor.Blue);
@@ -83,11 +84,11 @@ public class LudoGameMovePieceTests
 
         game.MovePiece(player, piece, 2);
 
-        Assert.Equal(1, game.CurrentPlayerIndex); // turn passed to Blue
-        Assert.Equal(0, game.ConsecutiveSixes);
+        Assert.That(game.CurrentPlayerIndex, Is.EqualTo(1)); // turn passed to Blue
+        Assert.That(game.ConsecutiveSixes, Is.EqualTo(0));
     }
 
-    [Fact]
+    [Test]
     public void MovePiece_OnBoardPiece_MovesToNewSquareAndLeavesOldOne()
     {
         var game = NewPlayingGame(PlayerColor.Red, PlayerColor.Blue);
@@ -101,13 +102,13 @@ public class LudoGameMovePieceTests
 
         game.MovePiece(player, piece, 2);
 
-        Assert.Equal(5, piece.PathIndex);
-        Assert.DoesNotContain(piece, oldSquare.Pieces);
+        Assert.That(piece.PathIndex, Is.EqualTo(5));
+        Assert.That(oldSquare.Pieces, Does.Not.Contain(piece));
         var newSquare = game.GetSquareAtPathIndex(PlayerColor.Red, 5);
-        Assert.Contains(piece, newSquare.Pieces);
+        Assert.That(newSquare.Pieces, Does.Contain(piece));
     }
 
-    [Fact]
+    [Test]
     public void MovePiece_OvershootingMove_ThrowsInvalidOperationException()
     {
         var game = NewPlayingGame(PlayerColor.Red, PlayerColor.Blue);
@@ -119,7 +120,7 @@ public class LudoGameMovePieceTests
         Assert.Throws<InvalidOperationException>(() => game.MovePiece(player, piece, 6));
     }
 
-    [Fact]
+    [Test]
     public void MovePiece_LandingOnNonSafeSquareWithOpponent_CapturesOpponentPiece()
     {
         var game = NewPlayingGame(PlayerColor.Red, PlayerColor.Blue);
@@ -135,18 +136,18 @@ public class LudoGameMovePieceTests
         opponent.PathIndex = 20; // arbitrary, irrelevant to capture logic
 
         var targetSquare = game.GetSquareAtPathIndex(PlayerColor.Red, 5); // Red index 5 is also non-safe
-        Assert.Equal(SquareType.Common, targetSquare.Type);
+        Assert.That(targetSquare.Type, Is.EqualTo(SquareType.Common));
         targetSquare.Pieces.Add(opponent);
 
         game.MovePiece(red, mover, 2);
 
-        Assert.Equal(PieceState.Base, opponent.State);
-        Assert.Null(opponent.PathIndex);
-        Assert.DoesNotContain(opponent, targetSquare.Pieces);
-        Assert.Contains(mover, targetSquare.Pieces);
+        Assert.That(opponent.State, Is.EqualTo(PieceState.Base));
+        Assert.That(opponent.PathIndex, Is.Null);
+        Assert.That(targetSquare.Pieces, Does.Not.Contain(opponent));
+        Assert.That(targetSquare.Pieces, Does.Contain(mover));
     }
 
-    [Fact]
+    [Test]
     public void MovePiece_LandingOnSafeSquareWithOpponent_DoesNotCapture()
     {
         var game = NewPlayingGame(PlayerColor.Red, PlayerColor.Blue);
@@ -162,17 +163,17 @@ public class LudoGameMovePieceTests
         opponent.PathIndex = 12;
 
         var targetSquare = game.GetSquareAtPathIndex(PlayerColor.Red, 8); // Red index 8 is Safe
-        Assert.Equal(SquareType.Safe, targetSquare.Type);
+        Assert.That(targetSquare.Type, Is.EqualTo(SquareType.Safe));
         targetSquare.Pieces.Add(opponent);
 
         game.MovePiece(red, mover, 2);
 
-        Assert.Equal(PieceState.OnBoard, opponent.State);
-        Assert.Contains(opponent, targetSquare.Pieces);
-        Assert.Contains(mover, targetSquare.Pieces);
+        Assert.That(opponent.State, Is.EqualTo(PieceState.OnBoard));
+        Assert.That(targetSquare.Pieces, Does.Contain(opponent));
+        Assert.That(targetSquare.Pieces, Does.Contain(mover));
     }
 
-    [Fact]
+    [Test]
     public void MovePiece_OwnColorPiecesOnSameSquare_AreNeverCaptured()
     {
         var game = NewPlayingGame(PlayerColor.Red, PlayerColor.Blue);
@@ -191,12 +192,12 @@ public class LudoGameMovePieceTests
 
         game.MovePiece(red, mover, 2);
 
-        Assert.Equal(PieceState.OnBoard, teammatePiece.State);
-        Assert.Contains(teammatePiece, targetSquare.Pieces);
-        Assert.Contains(mover, targetSquare.Pieces);
+        Assert.That(teammatePiece.State, Is.EqualTo(PieceState.OnBoard));
+        Assert.That(targetSquare.Pieces, Does.Contain(teammatePiece));
+        Assert.That(targetSquare.Pieces, Does.Contain(mover));
     }
 
-    [Fact]
+    [Test]
     public void MovePiece_ReachingTheLastIndex_MarksPieceFinishedAndDoesNotPlaceItOnASquare()
     {
         var game = NewPlayingGame(PlayerColor.Red, PlayerColor.Blue);
@@ -207,11 +208,11 @@ public class LudoGameMovePieceTests
 
         game.MovePiece(player, piece, 3);
 
-        Assert.Equal(PieceState.Finished, piece.State);
-        Assert.Equal(LudoGame.TotalPathLength - 1, piece.PathIndex);
+        Assert.That(piece.State, Is.EqualTo(PieceState.Finished));
+        Assert.That(piece.PathIndex, Is.EqualTo(LudoGame.TotalPathLength - 1));
     }
 
-    [Fact]
+    [Test]
     public void MovePiece_LastPieceFinishing_EndsTheGameForThatPlayer()
     {
         var game = NewPlayingGame(PlayerColor.Red, PlayerColor.Blue);
@@ -229,12 +230,12 @@ public class LudoGameMovePieceTests
 
         game.MovePiece(player, lastPiece, 1);
 
-        Assert.Equal(PieceState.Finished, lastPiece.State);
-        Assert.True(game.CheckWinner(player));
-        Assert.Equal(GameState.Finished, game.State);
+        Assert.That(lastPiece.State, Is.EqualTo(PieceState.Finished));
+        Assert.That(game.CheckWinner(player), Is.True);
+        Assert.That(game.State, Is.EqualTo(GameState.Finished));
     }
 
-    [Fact]
+    [Test]
     public void CapturePiece_ResetsPieceToBaseAndRemovesFromSquare()
     {
         var game = NewPlayingGame(PlayerColor.Red, PlayerColor.Blue);
@@ -246,12 +247,12 @@ public class LudoGameMovePieceTests
 
         game.CapturePiece(piece, square);
 
-        Assert.Equal(PieceState.Base, piece.State);
-        Assert.Null(piece.PathIndex);
-        Assert.DoesNotContain(piece, square.Pieces);
+        Assert.That(piece.State, Is.EqualTo(PieceState.Base));
+        Assert.That(piece.PathIndex, Is.Null);
+        Assert.That(square.Pieces, Does.Not.Contain(piece));
     }
 
-    [Fact]
+    [Test]
     public void HandleCapture_SkipsCaptureOnSafeSquares()
     {
         var game = NewPlayingGame(PlayerColor.Red, PlayerColor.Blue);
@@ -264,33 +265,33 @@ public class LudoGameMovePieceTests
 
         game.HandleCapture(mover, square);
 
-        Assert.Equal(PieceState.OnBoard, opponent.State);
-        Assert.Contains(opponent, square.Pieces);
+        Assert.That(opponent.State, Is.EqualTo(PieceState.OnBoard));
+        Assert.That(square.Pieces, Does.Contain(opponent));
     }
 
-    [Fact]
+    [Test]
     public void CheckWinner_TrueOnlyWhenAllFourPiecesFinished()
     {
         var game = NewPlayingGame(PlayerColor.Red, PlayerColor.Blue);
         var player = game.Players[0];
 
-        Assert.False(game.CheckWinner(player));
+        Assert.That(game.CheckWinner(player), Is.False);
 
         foreach (var p in player.Pieces)
         {
             p.State = PieceState.Finished;
         }
 
-        Assert.True(game.CheckWinner(player));
+        Assert.That(game.CheckWinner(player), Is.True);
     }
 
-    [Fact]
+    [Test]
     public void EndGame_SetsStateToFinished()
     {
         var game = NewPlayingGame(PlayerColor.Red, PlayerColor.Blue);
 
         game.EndGame();
 
-        Assert.Equal(GameState.Finished, game.State);
+        Assert.That(game.State, Is.EqualTo(GameState.Finished));
     }
 }

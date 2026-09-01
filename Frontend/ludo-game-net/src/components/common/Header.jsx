@@ -1,7 +1,7 @@
-import { RotateCcw, Volume2, VolumeX } from 'lucide-react';
+import { RotateCcw, Volume2, VolumeX, Info } from 'lucide-react';
 import { WOOD_PANEL } from '../../constants/colors.js';
 
-export default function Header({ screen, muted, onToggleMuted, onResetGame }) {
+export default function Header({ screen, muted, onToggleMuted, onResetGame, onShowAbout }) {
   return (
     <header className="w-full max-w-5xl flex items-center justify-between mb-5">
       <div className="flex items-center gap-2">
@@ -14,6 +14,14 @@ export default function Header({ screen, muted, onToggleMuted, onResetGame }) {
         </h1>
       </div>
       <div className="flex items-center gap-2">
+        <button
+          onClick={onShowAbout}
+          title="Tentang"
+          className="cursor-target flex items-center justify-center w-9 h-9 rounded-lg transition"
+          style={{ color: '#F3EBDA', ...WOOD_PANEL }}
+        >
+          <Info size={16} />
+        </button>
         <button
           onClick={onToggleMuted}
           title={muted ? 'Aktifkan suara' : 'Bisukan suara'}
