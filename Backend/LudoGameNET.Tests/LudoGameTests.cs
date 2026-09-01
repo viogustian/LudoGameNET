@@ -6,10 +6,6 @@ using NUnit.Framework;
 
 namespace LudoGameNET.Tests;
 
-// ============================================================================
-// MOVE PIECE TESTS
-// ============================================================================
-
 [TestFixture]
 public class LudoGameMovePieceTests
 {
@@ -301,10 +297,6 @@ public class LudoGameMovePieceTests
     }
 }
 
-// ============================================================================
-// TURN TESTS
-// ============================================================================
-
 [TestFixture]
 public class LudoGameTurnTests
 {
@@ -371,10 +363,6 @@ public class LudoGameTurnTests
         Assert.That(game.ConsecutiveSixes, Is.EqualTo(1));
     }
 }
-
-// ============================================================================
-// MOVEMENT RULE TESTS
-// ============================================================================
 
 [TestFixture]
 public class LudoGameMovementRuleTests
@@ -545,9 +533,6 @@ public class GameManagerTests
         Assert.That(manager.CurrentGame, Is.Null);
     }
 }
-// ============================================================================
-// CONSTRUCTION TESTS
-// ============================================================================
 
 [TestFixture]
 public class LudoGameConstructionTests
@@ -675,10 +660,6 @@ public class LudoGameConstructionTests
         }
     }
 }
-
-// ============================================================================
-// BOARD AND PATH TESTS
-// ============================================================================
 
 [TestFixture]
 public class LudoGameBoardAndPathTests
@@ -1032,10 +1013,6 @@ public class LudoGameEdgeCaseTests
         Assert.That(value2, Is.InRange(1, 6));
     }
 }
-
-// ============================================================================
-// SUPPORTING MODEL TESTS
-// ============================================================================
 
 [TestFixture]
 public class PieceTests
