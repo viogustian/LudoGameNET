@@ -2,30 +2,21 @@ using LudoGameNET.Api.Models;
 using LudoGameNET.Api.Game;
 using Serilog;
 
-// Bootstrap logger: catches any failure that happens before the host's own
-// Serilog pipeline (configured from appsettings.json below) is ready.
+var builder = WebApplication.CreateBuilder(args);
+
 Log.Logger = new LoggerConfiguration()
-    .MinimumLevel.Information()
-    .WriteTo.Console()
-    .CreateBootstrapLogger();
+    .ReadFrom.Configuration(builder.Configuration)
+    .CreateLogger();
 
 try
 {
-    Log.Information("Starting LudoGameNET.Api");
+    Log.Information("Starting up the application...");
 
-    var builder = WebApplication.CreateBuilder(args);
-
-    builder.Host.UseSerilog((context, services, configuration) => configuration
-        .ReadFrom.Configuration(context.Configuration)
-        .ReadFrom.Services(services)
-        .Enrich.FromLogContext()
-        .Enrich.WithProperty("Application", "LudoGameNET.Api"));
+    builder.Host.UseSerilog();
 
     builder.Services.AddControllers()
         .AddJsonOptions(options =>
         {
-            // Serialize enums (PlayerColor, PieceState, GameState, SquareType) as
-            // readable strings ("Red", "OnBoard", ...) instead of numbers.
             options.JsonSerializerOptions.Converters.Add(
                 new System.Text.Json.Serialization.JsonStringEnumConverter());
         });
@@ -41,8 +32,6 @@ try
         });
     });
 
-    // The LudoGame engine is created on demand (via IGameManager.CreateGame),
-    // so the manager itself can be a singleton holding the single active game.
     builder.Services.AddSingleton<IGameManager, GameManager>();
 
     builder.Services.AddCors(options =>
@@ -52,10 +41,6 @@ try
     });
 
     var app = builder.Build();
-
-    // Structured request logging: one summary log line per HTTP request
-    // (method, path, status code, elapsed ms) enriched onto the LogContext.
-    app.UseSerilogRequestLogging();
 
     if (app.Environment.IsDevelopment())
     {
@@ -72,7 +57,7 @@ try
 }
 catch (Exception ex)
 {
-    Log.Fatal(ex, "LudoGameNET.Api terminated unexpectedly during startup");
+    Log.Fatal(ex, "Application failed to start unexpectedly.");
 }
 finally
 {
