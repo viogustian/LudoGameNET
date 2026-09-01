@@ -31,6 +31,7 @@ public class GameControllerTests
         // Arrange
         var colors = new List<PlayerColor> { PlayerColor.Red, PlayerColor.Blue };
         var game = new LudoGame(colors);
+        game.StartGame();
         _gameManagerMock.Setup(gm => gm.CreateGame(colors)).Returns(game);
 
         // Act
@@ -168,6 +169,7 @@ public class GameControllerTests
         // Arrange
         var game = new LudoGame(new List<PlayerColor> { PlayerColor.Red, PlayerColor.Blue });
         game.StartGame();
+        game.ForcedDiceValue = 6;
         _gameManagerMock.Setup(gm => gm.CurrentGame).Returns(game);
 
         // Act

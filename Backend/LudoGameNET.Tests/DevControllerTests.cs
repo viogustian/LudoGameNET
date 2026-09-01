@@ -24,6 +24,7 @@ public class DevControllerTests
     {
         _gameManagerMock = new Mock<IGameManager>();
         _envMock = new Mock<IWebHostEnvironment>();
+        _envMock.Setup(e => e.EnvironmentName).Returns("Development");
         // For testing, we assume we're in development. The actual development check is an integration test.
         _loggerMock = new Mock<ILogger<DevController>>();
         _controller = new DevController(_gameManagerMock.Object, _envMock.Object, _loggerMock.Object);
