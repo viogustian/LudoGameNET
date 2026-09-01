@@ -135,7 +135,7 @@ public class LudoGameEdgeCaseTests
         Assert.That(game.IsValidPosition(new Point(7, 7)), Is.True);
         Assert.That(game.IsValidPosition(new Point(14, 14)), Is.True);
     }
-
+ 
     [Test]
     public void IsValidPosition_WithInvalidPosition_ReturnsFalse()
     {
