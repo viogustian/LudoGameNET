@@ -365,7 +365,7 @@ public class GameStateMapperTests
     public void ToPlayerDto_ConvertsPlayerCorrectly()
     {
         // Arrange
-        var game = new LudoGame(new List<PlayerColor> { PlayerColor.Green });
+        var game = new LudoGame(new List<PlayerColor> { PlayerColor.Green, PlayerColor.Red });
         var player = game.Players[0];
 
         // Act
@@ -381,7 +381,7 @@ public class GameStateMapperTests
     public void ToPlayerDto_ConvertsPiecesCorrectly()
     {
         // Arrange
-        var game = new LudoGame(new List<PlayerColor> { PlayerColor.Yellow });
+        var game = new LudoGame(new List<PlayerColor> { PlayerColor.Yellow, PlayerColor.Red });
         var player = game.Players[0];
 
         // Act

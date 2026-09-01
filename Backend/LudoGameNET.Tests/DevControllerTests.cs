@@ -24,9 +24,23 @@ public class DevControllerTests
     {
         _gameManagerMock = new Mock<IGameManager>();
         _envMock = new Mock<IWebHostEnvironment>();
+        _envMock.Setup(e => e.EnvironmentName).Returns("Development");
         // For testing, we assume we're in development. The actual development check is an integration test.
         _loggerMock = new Mock<ILogger<DevController>>();
         _controller = new DevController(_gameManagerMock.Object, _envMock.Object, _loggerMock.Object);
+    }
+
+    [Test]
+    public void AnyEndpoint_NotDevelopmentEnvironment_ReturnsNotFound()
+    {
+        // Arrange
+        _envMock.Setup(e => e.EnvironmentName).Returns("Production");
+
+        // Act
+        var result = _controller.GetDiceStatus();
+
+        // Assert
+        Assert.That(result.Result, Is.InstanceOf<NotFoundObjectResult>());
     }
 
     [Test]
@@ -201,6 +215,21 @@ public class DevControllerTests
     }
 
     [Test]
+    public void FinishAll_WithInvalidColor_ReturnsBadRequest()
+    {
+        // Arrange
+        var game = new LudoGame(new List<PlayerColor> { PlayerColor.Red, PlayerColor.Blue });
+        game.StartGame();
+        _gameManagerMock.Setup(gm => gm.CurrentGame).Returns(game);
+
+        // Act
+        var result = _controller.FinishAll(new DevColorRequest { Color = PlayerColor.Green });
+
+        // Assert
+        Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
+    }
+
+    [Test]
     public void ResetToBase_WithValidColor_ReturnsPiecesToBase()
     {
         // Arrange
@@ -216,6 +245,21 @@ public class DevControllerTests
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
         var stateDto = (result.Result as OkObjectResult)!.Value as GameStateDto;
         Assert.That(stateDto, Is.Not.Null);
+    }
+
+    [Test]
+    public void ResetToBase_WithInvalidColor_ReturnsBadRequest()
+    {
+        // Arrange
+        var game = new LudoGame(new List<PlayerColor> { PlayerColor.Red, PlayerColor.Blue });
+        game.StartGame();
+        _gameManagerMock.Setup(gm => gm.CurrentGame).Returns(game);
+
+        // Act
+        var result = _controller.ResetToBase(new DevColorRequest { Color = PlayerColor.Green });
+
+        // Assert
+        Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
     }
 
     [Test]
@@ -239,6 +283,27 @@ public class DevControllerTests
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
         var stateDto = (result.Result as OkObjectResult)!.Value as GameStateDto;
         Assert.That(stateDto, Is.Not.Null);
+    }
+
+    [Test]
+    public void ForcePiece_WithInvalidRequest_ReturnsBadRequest()
+    {
+        // Arrange
+        var game = new LudoGame(new List<PlayerColor> { PlayerColor.Red, PlayerColor.Blue });
+        game.StartGame();
+        _gameManagerMock.Setup(gm => gm.CurrentGame).Returns(game);
+
+        // Act - Invalid color
+        var result = _controller.ForcePiece(new DevForcePieceRequest 
+        { 
+            Color = PlayerColor.Green, 
+            PieceId = 0, 
+            State = PieceState.OnBoard, 
+            PathIndex = 5 
+        });
+
+        // Assert
+        Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
     }
 
     [Test]
