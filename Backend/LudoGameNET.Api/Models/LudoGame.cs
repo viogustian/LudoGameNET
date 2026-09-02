@@ -437,7 +437,7 @@ public class LudoGame
                 newSquare.Pieces.Add(piece);
                 HandleCapture(piece, newSquare);
 
-                _logger.LogDebug(
+                _logger.LogInformation(
                     "Player {PlayerId} ({PlayerColor}) moved piece {PieceId} from {FromIndex} to {ToIndex} with a roll of {DiceValue}",
                     player.Id, player.Color, piece.Id, previousIndex, newIndex, diceValue);
             }

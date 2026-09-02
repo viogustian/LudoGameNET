@@ -80,7 +80,7 @@ public class GameController : ControllerBase
         var currentPlayer = game.GetCurrentPlayer();
         var validPieces = game.GetValidPieces(currentPlayer, diceValue);
 
-        _logger.LogInformation(
+        _logger.LogDebug(
             "Player {PlayerId} ({PlayerColor}) rolled {DiceValue} with {ValidPieceCount} valid piece(s) to move",
             currentPlayer.Id, currentPlayer.Color, diceValue, validPieces.Count);
 
