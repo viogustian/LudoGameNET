@@ -1,0 +1,12 @@
+**/.git
+**/.github
+**/.vs
+**/.vscode
+**/.agents
+**/.tmp
+**/.scratch
+**/bin
+**/obj
+Frontend/
+node_modules/
+npm-debug.log

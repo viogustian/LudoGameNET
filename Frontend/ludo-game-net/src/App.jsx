@@ -10,8 +10,6 @@ import Board from './components/board/Board.jsx';
 import TurnPanel from './components/sidebar/TurnPanel.jsx';
 import PlayersList from './components/sidebar/PlayersList.jsx';
 import { useGameState } from './hooks/useGameState.js';
-import DevTools from './components/devtools/DevTools.jsx';
-import { DEV_TOOLS_ENABLED } from './config/devtools.js';
 
 export default function App() {
   const [showAbout, setShowAbout] = useState(false);
@@ -104,8 +102,6 @@ export default function App() {
       />
 
       <AboutModal open={showAbout} onClose={() => setShowAbout(false)} />
-
-      {DEV_TOOLS_ENABLED && <DevTools uiState={gameStateApi} />}
     </div>
   );
 }

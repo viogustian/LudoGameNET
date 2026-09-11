@@ -5,6 +5,7 @@ export function useLudoHub(callbacks = {}) {
   const [connection, setConnection] = useState(null);
   const [room, setRoom] = useState(null);
   const [error, setError] = useState(null);
+  const [connectionStatus, setConnectionStatus] = useState('connecting'); // 'connecting' | 'connected' | 'reconnecting' | 'disconnected'
 
   const callbacksRef = useRef(callbacks);
   useEffect(() => {
@@ -12,10 +13,35 @@ export function useLudoHub(callbacks = {}) {
   }, [callbacks]);
 
   useEffect(() => {
+    // Determine backend base URL:
+    // 1. VITE_API_URL if configured (e.g. https://ludogamenet-api.onrender.com)
+    // 2. http://localhost:5286 when running in local development
+    // 3. window.location.origin when deployed in same-origin monolith container
+    const rawApiUrl = import.meta.env.VITE_API_URL;
+    const apiBase = rawApiUrl
+      ? rawApiUrl.replace(/\/+$/, '')
+      : (import.meta.env.DEV ? 'http://localhost:5286' : window.location.origin);
+
+    const hubUrl = `${apiBase}/hubs/ludo`;
+
     const newConnection = new signalR.HubConnectionBuilder()
-      .withUrl("http://localhost:5286/hubs/ludo") // Adjusted URL based on backend launchSettings
-      .withAutomaticReconnect()
+      .withUrl(hubUrl)
+      .withAutomaticReconnect([0, 2000, 5000, 10000, 20000])
       .build();
+
+    newConnection.onreconnecting(() => {
+      setConnectionStatus('reconnecting');
+      setError('Connection lost. Reconnecting to game server...');
+    });
+
+    newConnection.onreconnected(() => {
+      setConnectionStatus('connected');
+      setError(null);
+    });
+
+    newConnection.onclose(() => {
+      setConnectionStatus('disconnected');
+    });
 
     newConnection.on('RoomStateUpdated', (updatedRoom) => {
       setRoom(updatedRoom);
@@ -37,11 +63,14 @@ export function useLudoHub(callbacks = {}) {
       if (callbacksRef.current.onPieceMoved) callbacksRef.current.onPieceMoved(updatedRoom);
     });
 
+    setConnectionStatus('connecting');
     newConnection.start().then(() => {
-        setError(null);
+      setConnectionStatus('connected');
+      setError(null);
     }).catch(err => {
       console.error('SignalR Connection Error: ', err);
-      setError('Could not connect to game server.');
+      setConnectionStatus('disconnected');
+      setError('Could not connect to game server. If the server is on a free tier (e.g. Render), please wait ~30-50 seconds for it to wake up and refresh.');
     });
 
     setConnection(newConnection);
@@ -122,6 +151,7 @@ export function useLudoHub(callbacks = {}) {
 
   return {
     connection,
+    connectionStatus,
     room,
     error,
     createRoom,

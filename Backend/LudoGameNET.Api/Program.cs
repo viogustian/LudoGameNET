@@ -55,17 +55,47 @@ try
 
     var app = builder.Build();
 
-    if (app.Environment.IsDevelopment())
+    app.UseForwardedHeaders(new Microsoft.AspNetCore.Builder.ForwardedHeadersOptions
     {
-        app.UseSwagger();
-        app.UseSwaggerUI();
-    }
+        ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor | 
+                           Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto
+    });
+
+    // Enable Swagger for interactive API exploration & verification in both dev and production
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Ludo Game API v1");
+        c.RoutePrefix = "swagger";
+    });
 
     app.UseCors("AllowAll");
-    app.UseHttpsRedirection();
+
+    if (app.Environment.IsDevelopment())
+    {
+        app.UseHttpsRedirection();
+    }
+
     app.UseAuthorization();
     app.MapControllers();
     app.MapHub<LudoHub>("/hubs/ludo");
+
+    // Health check and root info endpoints for cloud hosting monitoring (Render, Koyeb, etc.)
+    app.MapGet("/", () => Results.Ok(new
+    {
+        name = "LudoGameNET API",
+        status = "healthy",
+        version = "1.0.0",
+        signalrHub = "/hubs/ludo",
+        swagger = "/swagger",
+        serverTime = DateTime.UtcNow
+    }));
+
+    app.MapGet("/health", () => Results.Ok(new
+    {
+        status = "healthy",
+        serverTime = DateTime.UtcNow
+    }));
 
     app.Run();
 }
