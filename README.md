@@ -1,6 +1,6 @@
 # LudoGameNET 🎲
 
-A full-stack implementation of **Ludo** (a Parcheesi-style board game): a REST API backend built with **ASP.NET Core 8**, and a **React + Vite + Tailwind** frontend with an interactive board, animations, sound effects, and a **DevTools** panel for manual debugging (forcing dice rolls, teleporting pieces, etc.).
+A full-stack real-time multiplayer implementation of **Ludo** (a Parcheesi-style board game). The backend is built with **ASP.NET Core 8 & SignalR**, and the frontend is a **React + Vite + Tailwind** SPA featuring an interactive board, animations, and sound effects.
 
 ```
 LudoGameNET/
@@ -50,12 +50,12 @@ LudoGameNET/
 
 | Layer      | Technology |
 |------------|-----------|
-| Backend    | ASP.NET Core 8 Web API (C#), Swagger/Swashbuckle, xUnit for tests |
-| Frontend   | React 18, Vite 5, Tailwind CSS, lucide-react (icons), GSAP (cursor animation) |
-| Communication | Plain REST JSON (`fetch`), CORS `AllowAll` for easy local development |
-| State      | Backend: one in-memory `LudoGame` per process (via an `IGameManager` singleton). Frontend: React state (`useGameState` hook) resynced with server state after each action |
+| Backend    | ASP.NET Core 8 Web API, SignalR (WebSockets), C#, xUnit for tests |
+| Frontend   | React 18, Vite 5, Tailwind CSS, `@microsoft/signalr`, GSAP |
+| Communication | Real-time events via **SignalR** (WebSockets) for gameplay, REST for initial setup. |
+| State      | Backend: in-memory `RoomManager` managing multiple game sessions. Frontend: React state (`useGameState` hook) synced via SignalR. |
 
-The backend and frontend talk over plain HTTP — there's no SignalR/WebSocket, so this is **hotseat / single-machine play** (all players take turns on the same device), not real-time online multiplayer.
+This project supports **real-time online multiplayer**! Players can create rooms, share room codes, and play together across different browsers and devices.
 
 ## Game Rules
 
@@ -256,9 +256,13 @@ The full class diagram lives in `Backend/LudoGameNET.Api/ClassDiagram/` (`ClassD
 
 Sound effects live in `Frontend/ludo-game-net/public/sfx/` (see the `README.md` in that folder for their source/license).
 
-## Roadmap / Future Ideas
+## Contributing
 
-- [ ] Real-time multiplayer (SignalR/WebSocket) — currently pure REST-based hotseat play.
-- [ ] Game persistence (all state is currently lost when the backend process restarts).
-- [ ] Optional rules: blockades, double captures, tournament mode.
-- [ ] AI/bot mode for solo play.
+Contributions are welcome! If you'd like to help improve the game:
+1. **Fork** the repository and clone it locally.
+2. **Create a branch** for your feature or bug fix (`git checkout -b feature/my-new-feature`).
+3. **Commit** your changes with clear messages (`git commit -m "feat: add new feature"`).
+4. **Push** to your fork and submit a **Pull Request**.
+
+Please ensure your code passes existing tests (`dotnet test`) and follows the current project structure.
+
