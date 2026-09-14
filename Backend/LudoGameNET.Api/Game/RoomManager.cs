@@ -1,20 +1,30 @@
 using System.Collections.Concurrent;
 using LudoGameNET.Api.Enums;
 using LudoGameNET.Api.Models;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 
 namespace LudoGameNET.Api.Game;
 
 public class RoomManager : IRoomManager
 {
-    private readonly ConcurrentDictionary<string, RoomSession> _rooms = new();
+    private readonly IMemoryCache _cache;
+    private readonly RoomCacheOptions _options;
+    private readonly ConcurrentDictionary<string, byte> _activeRoomCodes = new();
     private readonly ConcurrentDictionary<string, string> _connectionToRoom = new();
     private readonly ILogger<RoomManager> _logger;
     private readonly ILogger<LudoGame> _gameLogger;
 
-    public RoomManager(ILogger<RoomManager>? logger = null, ILogger<LudoGame>? gameLogger = null)
+    public RoomManager(
+        IMemoryCache cache,
+        IOptions<RoomCacheOptions>? options = null,
+        ILogger<RoomManager>? logger = null,
+        ILogger<LudoGame>? gameLogger = null)
     {
+        _cache = cache ?? throw new ArgumentNullException(nameof(cache));
+        _options = options?.Value ?? new RoomCacheOptions();
         _logger = logger ?? NullLogger<RoomManager>.Instance;
         _gameLogger = gameLogger ?? NullLogger<LudoGame>.Instance;
     }
@@ -22,21 +32,34 @@ public class RoomManager : IRoomManager
     public RoomSession CreateRoom()
     {
         string code = GenerateRoomCode();
-        while (_rooms.ContainsKey(code))
+        while (_activeRoomCodes.ContainsKey(code) || _cache.TryGetValue(code, out _))
         {
             code = GenerateRoomCode();
         }
 
         var room = new RoomSession(code);
-        _rooms.TryAdd(code, room);
-        _logger.LogInformation("Room {RoomCode} created", code);
+        _activeRoomCodes.TryAdd(code, 0);
+
+        var cacheEntryOptions = CreateCacheEntryOptions(code);
+        _cache.Set(code, room, cacheEntryOptions);
+
+        _logger.LogInformation("Room {RoomCode} created and cached in-memory (Sliding: {Sliding}m, Absolute: {Absolute}h)",
+            code, _options.SlidingExpirationMinutes, _options.AbsoluteExpirationHours);
+
         return room;
     }
 
     public RoomSession? GetRoom(string roomCode)
     {
-        _rooms.TryGetValue(roomCode.ToUpperInvariant(), out var room);
-        return room;
+        if (string.IsNullOrWhiteSpace(roomCode)) return null;
+
+        string normalizedCode = roomCode.ToUpperInvariant();
+        if (_cache.TryGetValue(normalizedCode, out RoomSession? room))
+        {
+            return room;
+        }
+
+        return null;
     }
 
     public bool JoinRoom(string roomCode, string connectionId)
@@ -76,7 +99,7 @@ public class RoomManager : IRoomManager
                 lock (room)
                 {
                     room.JoinOrder.Remove(connectionId);
-                    
+
                     // Remove from seats
                     foreach (var kvp in room.PlayerConnections)
                     {
@@ -128,6 +151,7 @@ public class RoomManager : IRoomManager
 
             room.PlayerConnections[connectionId] = color;
             room.ColorConnections[color] = connectionId;
+            room.UpdateActivity();
         }
         return true;
     }
@@ -149,11 +173,81 @@ public class RoomManager : IRoomManager
         }
     }
 
-    public IEnumerable<RoomSession> GetAllRooms() => _rooms.Values;
+    public IEnumerable<RoomSession> GetAllRooms()
+    {
+        var rooms = new List<RoomSession>();
+        foreach (var code in _activeRoomCodes.Keys)
+        {
+            if (_cache.TryGetValue(code, out RoomSession? room) && room != null)
+            {
+                rooms.Add(room);
+            }
+            else
+            {
+                _activeRoomCodes.TryRemove(code, out _);
+            }
+        }
+        return rooms;
+    }
 
     public void RemoveRoom(string roomCode)
     {
-        _rooms.TryRemove(roomCode, out _);
+        if (string.IsNullOrWhiteSpace(roomCode)) return;
+
+        string normalizedCode = roomCode.ToUpperInvariant();
+        _activeRoomCodes.TryRemove(normalizedCode, out _);
+        _cache.Remove(normalizedCode);
+    }
+
+    private MemoryCacheEntryOptions CreateCacheEntryOptions(string roomCode)
+    {
+        var options = new MemoryCacheEntryOptions
+        {
+            SlidingExpiration = TimeSpan.FromMinutes(_options.SlidingExpirationMinutes),
+            AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(_options.AbsoluteExpirationHours)
+        };
+
+        if (_options.SizeLimit.HasValue)
+        {
+            options.SetSize(1);
+        }
+
+        options.RegisterPostEvictionCallback((key, value, reason, state) =>
+        {
+            OnRoomEvicted(key?.ToString() ?? roomCode, value as RoomSession, reason);
+        });
+
+        return options;
+    }
+
+    private void OnRoomEvicted(string roomCode, RoomSession? room, EvictionReason reason)
+    {
+        _activeRoomCodes.TryRemove(roomCode, out _);
+
+        // Clean up connection mappings for this room
+        if (room != null)
+        {
+            foreach (var connId in room.PlayerConnections.Keys)
+            {
+                _connectionToRoom.TryRemove(connId, out _);
+            }
+            foreach (var connId in room.JoinOrder)
+            {
+                _connectionToRoom.TryRemove(connId, out _);
+            }
+        }
+        else
+        {
+            foreach (var kvp in _connectionToRoom.ToArray())
+            {
+                if (kvp.Value == roomCode)
+                {
+                    _connectionToRoom.TryRemove(kvp.Key, out _);
+                }
+            }
+        }
+
+        _logger.LogInformation("Room {RoomCode} evicted from cache. Reason: {Reason}", roomCode, reason);
     }
 
     private string GenerateRoomCode()

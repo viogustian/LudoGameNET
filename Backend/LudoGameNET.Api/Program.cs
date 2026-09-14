@@ -1,7 +1,6 @@
 using LudoGameNET.Api.Models;
 using LudoGameNET.Api.Game;
 using LudoGameNET.Api.Hubs;
-using LudoGameNET.Api.Services;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -41,8 +40,10 @@ try
         });
     });
 
+    builder.Services.AddMemoryCache();
+    builder.Services.Configure<RoomCacheOptions>(
+        builder.Configuration.GetSection(RoomCacheOptions.SectionName));
     builder.Services.AddSingleton<IRoomManager, RoomManager>();
-    builder.Services.AddHostedService<RoomCleanupService>();
 
     builder.Services.AddCors(options =>
     {
@@ -81,19 +82,21 @@ try
     app.MapHub<LudoHub>("/hubs/ludo");
 
     // Health check and root info endpoints for cloud hosting monitoring (Render, Koyeb, etc.)
-    app.MapGet("/", () => Results.Ok(new
+    app.MapGet("/", (IRoomManager roomManager) => Results.Ok(new
     {
         name = "LudoGameNET API",
         status = "healthy",
         version = "1.0.0",
+        activeRooms = roomManager.GetAllRooms().Count(),
         signalrHub = "/hubs/ludo",
         swagger = "/swagger",
         serverTime = DateTime.UtcNow
     }));
 
-    app.MapGet("/health", () => Results.Ok(new
+    app.MapGet("/health", (IRoomManager roomManager) => Results.Ok(new
     {
         status = "healthy",
+        activeRooms = roomManager.GetAllRooms().Count(),
         serverTime = DateTime.UtcNow
     }));
 
