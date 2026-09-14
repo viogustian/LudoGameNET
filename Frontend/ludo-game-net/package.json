@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@microsoft/signalr": "^10.0.11",
     "gsap": "^3.12.5",
     "lucide-react": "^0.383.0",
     "react": "^18.3.1",

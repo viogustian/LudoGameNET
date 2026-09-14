@@ -4,22 +4,25 @@ import Header from './components/common/Header.jsx';
 import ErrorBanner from './components/common/ErrorBanner.jsx';
 import WinnerModal from './components/common/WinnerModal.jsx';
 import AboutModal from './components/common/AboutModal.jsx';
-import PlayerSetup from './components/setup/PlayerSetup.jsx';
+import LobbySetup from './components/setup/LobbySetup.jsx';
+import SeatSelection from './components/setup/SeatSelection.jsx';
 import Board from './components/board/Board.jsx';
 import TurnPanel from './components/sidebar/TurnPanel.jsx';
 import PlayersList from './components/sidebar/PlayersList.jsx';
 import { useGameState } from './hooks/useGameState.js';
-import DevTools from './components/devtools/DevTools.jsx';
-import { DEV_TOOLS_ENABLED } from './config/devtools.js';
 
 export default function App() {
   const [showAbout, setShowAbout] = useState(false);
   const gameStateApi = useGameState();
   const {
-    screen, selectedColors, gameState, diceValue, diceDisplayValue, rollToken, validPieces,
+    screen, gameState, diceValue, diceDisplayValue, rollToken, validPieces,
     rolling, busy, error, muted, cellGroups, validIds, canRoll, currentPlayer,
-    toggleMuted, toggleColor, startGame, rollDice, movePiece, resetGame,
+    room, colorConnections, myConnectionId, hostConnectionId,
+    toggleMuted, createRoom, joinRoom, claimSeat, startGame, rollDice, movePiece, resetGame,
   } = gameStateApi;
+
+  // Handle enums from backend
+  const isFinished = gameState?.state === 'Finished' || gameState?.state === 2;
 
   return (
     <div
@@ -44,11 +47,23 @@ export default function App() {
 
       <ErrorBanner message={error} />
 
-      {screen === 'setup' && (
-        <PlayerSetup
-          selectedColors={selectedColors}
-          onToggleColor={toggleColor}
-          onStart={startGame}
+      {screen === 'lobby' && (
+        <LobbySetup
+          onCreateRoom={createRoom}
+          onJoinRoom={joinRoom}
+          busy={busy}
+          error={error}
+        />
+      )}
+
+      {screen === 'seatSelection' && room && (
+        <SeatSelection
+          roomCode={room.roomCode}
+          colorConnections={colorConnections}
+          myConnectionId={myConnectionId}
+          hostConnectionId={hostConnectionId}
+          onClaimSeat={claimSeat}
+          onStartGame={startGame}
           busy={busy}
         />
       )}
@@ -82,13 +97,11 @@ export default function App() {
       )}
 
       <WinnerModal
-        winnerColor={gameState?.state === 'Finished' ? gameState.winnerColor : null}
+        winnerColor={isFinished ? gameState.winnerColor : null}
         onPlayAgain={resetGame}
       />
 
       <AboutModal open={showAbout} onClose={() => setShowAbout(false)} />
-
-      {DEV_TOOLS_ENABLED && <DevTools uiState={gameStateApi} />}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 using LudoGameNET.Api.Models;
 using LudoGameNET.Api.Game;
+using LudoGameNET.Api.Hubs;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -21,6 +22,13 @@ try
                 new System.Text.Json.Serialization.JsonStringEnumConverter());
         });
 
+    builder.Services.AddSignalR()
+        .AddJsonProtocol(options => 
+        {
+            options.PayloadSerializerOptions.Converters.Add(
+                new System.Text.Json.Serialization.JsonStringEnumConverter());
+        });
+
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen(options =>
     {
@@ -28,30 +36,69 @@ try
         {
             Title = "Ludo Game API",
             Version = "v1",
-            Description = "Web API backend for a Ludo (Parcheesi-style) board game, generated from the provided class diagram."
+            Description = "Web API backend for a Ludo (Parcheesi-style) board game, with SignalR multiplayer."
         });
     });
 
-    builder.Services.AddSingleton<IGameManager, GameManager>();
+    builder.Services.AddMemoryCache();
+    builder.Services.Configure<RoomCacheOptions>(
+        builder.Configuration.GetSection(RoomCacheOptions.SectionName));
+    builder.Services.AddSingleton<IRoomManager, RoomManager>();
 
     builder.Services.AddCors(options =>
     {
         options.AddPolicy("AllowAll", policy =>
-            policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+            policy.SetIsOriginAllowed(_ => true)
+                  .AllowAnyMethod()
+                  .AllowAnyHeader()
+                  .AllowCredentials());
     });
 
     var app = builder.Build();
 
-    if (app.Environment.IsDevelopment())
+    app.UseForwardedHeaders(new Microsoft.AspNetCore.Builder.ForwardedHeadersOptions
     {
-        app.UseSwagger();
-        app.UseSwaggerUI();
-    }
+        ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor | 
+                           Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto
+    });
+
+    // Enable Swagger for interactive API exploration & verification in both dev and production
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Ludo Game API v1");
+        c.RoutePrefix = "swagger";
+    });
 
     app.UseCors("AllowAll");
-    app.UseHttpsRedirection();
+
+    if (app.Environment.IsDevelopment())
+    {
+        app.UseHttpsRedirection();
+    }
+
     app.UseAuthorization();
     app.MapControllers();
+    app.MapHub<LudoHub>("/hubs/ludo");
+
+    // Health check and root info endpoints for cloud hosting monitoring (Render, Koyeb, etc.)
+    app.MapGet("/", (IRoomManager roomManager) => Results.Ok(new
+    {
+        name = "LudoGameNET API",
+        status = "healthy",
+        version = "1.0.0",
+        activeRooms = roomManager.GetAllRooms().Count(),
+        signalrHub = "/hubs/ludo",
+        swagger = "/swagger",
+        serverTime = DateTime.UtcNow
+    }));
+
+    app.MapGet("/health", (IRoomManager roomManager) => Results.Ok(new
+    {
+        status = "healthy",
+        activeRooms = roomManager.GetAllRooms().Count(),
+        serverTime = DateTime.UtcNow
+    }));
 
     app.Run();
 }

@@ -25,6 +25,8 @@ public class LudoGame
     public int CurrentPlayerIndex { get; set; }
     public int ConsecutiveSixes { get; set; }
     public GameState State { get; set; }
+    public int? CurrentDiceValue { get; set; }
+    public List<IPiece>? CurrentValidPieces { get; set; }
 
     private readonly ILogger<LudoGame> _logger;
 
@@ -154,6 +156,9 @@ public class LudoGame
         }
 
         Dice.Value = value;
+        CurrentDiceValue = value;
+        CurrentValidPieces = GetValidPieces(GetCurrentPlayer(), value);
+
         return value;
     }
 
@@ -270,7 +275,21 @@ public class LudoGame
 
     public void NextTurn()
     {
+        CurrentDiceValue = null;
+        CurrentValidPieces = null;
         CurrentPlayerIndex = (CurrentPlayerIndex + 1) % Players.Count;
+    }
+
+    public void PassTurn()
+    {
+        if (State != GameState.Playing) return;
+        
+        if (CurrentValidPieces != null && CurrentValidPieces.Count > 0)
+        {
+            throw new InvalidOperationException("Cannot pass turn when you have valid moves.");
+        }
+
+        HandleTurnAfterMove(CurrentDiceValue ?? 0);
     }
 
     public void HandleTurnAfterMove(int diceValue)
@@ -287,6 +306,11 @@ public class LudoGame
 
                 ConsecutiveSixes = 0;
                 NextTurn();
+            }
+            else
+            {
+                CurrentDiceValue = null;
+                CurrentValidPieces = null;
             }
 
             return;
